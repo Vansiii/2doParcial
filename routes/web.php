@@ -29,5 +29,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/change-password', [AuthController::class, 'changePassword'])->name('change-password.post');
     
     // CU04 y CU05: Gestión de Docentes (solo Administrador y Coordinador)
-    Route::resource('docentes', DocenteController::class);
+    Route::middleware('role:Administrador,Coordinador')->group(function () {
+        Route::resource('docentes', DocenteController::class);
+    });
 });

@@ -12,14 +12,6 @@ use Illuminate\Support\Facades\DB;
 class DocenteController extends Controller
 {
     /**
-     * Middleware para verificar que el usuario tenga rol de Administrador o Coordinador
-     */
-    public function __construct()
-    {
-        $this->middleware(['auth', 'role:Administrador,Coordinador']);
-    }
-
-    /**
      * CU05: Consultar Docentes
      * Actores: Administrador, Coordinador
      */

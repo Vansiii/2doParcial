@@ -70,45 +70,4 @@
         </div>
     </div>
 </div>
-
-<!-- Casos de Uso Disponibles -->
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header bg-info text-white">
-                <h6 class="mb-0"><i class="fas fa-list"></i> Casos de Uso Disponibles</h6>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6 class="text-primary">Todos los Actores:</h6>
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item">
-                                <i class="fas fa-check-circle text-success"></i> CU01: Iniciar Sesión
-                            </li>
-                            <li class="list-group-item">
-                                <i class="fas fa-check-circle text-success"></i> CU02: Cerrar Sesión
-                            </li>
-                            <li class="list-group-item">
-                                <i class="fas fa-check-circle text-success"></i> CU03: Cambiar Contraseña
-                            </li>
-                        </ul>
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <h6 class="text-primary">Administrador y Coordinador:</h6>
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item">
-                                <i class="fas fa-check-circle text-success"></i> CU04: Registrar Docente
-                            </li>
-                            <li class="list-group-item">
-                                <i class="fas fa-check-circle text-success"></i> CU05: Consultar Docentes
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 @endsection

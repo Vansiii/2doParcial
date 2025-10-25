@@ -72,12 +72,6 @@
                     </div>
                 </form>
                 
-                <div class="text-center mt-4">
-                    <small class="text-muted">
-                        <i class="fas fa-info-circle"></i> 
-                        Todos los actores: Administrador, Autoridad, Coordinador, Docente
-                    </small>
-                </div>
             </div>
         </div>
     </div>
