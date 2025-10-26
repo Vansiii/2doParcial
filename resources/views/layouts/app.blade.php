@@ -76,6 +76,26 @@
             background-color: #2e59d9;
             border-color: #2e59d9;
         }
+        
+        .border-left-primary {
+            border-left: 0.25rem solid #4e73df !important;
+        }
+        
+        .border-left-success {
+            border-left: 0.25rem solid #1cc88a !important;
+        }
+        
+        .border-left-info {
+            border-left: 0.25rem solid #36b9cc !important;
+        }
+        
+        .border-left-warning {
+            border-left: 0.25rem solid #f6c23e !important;
+        }
+        
+        .border-left-secondary {
+            border-left: 0.25rem solid #858796 !important;
+        }
     </style>
     
     @yield('styles')
@@ -98,10 +118,61 @@
                 </a>
                 
                 @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Coordinador'))
+                <!-- Sección de Gestión -->
+                <div class="mt-3">
+                    <small class="text-white-50 px-3">GESTIÓN</small>
+                </div>
+                
                 <a class="nav-link {{ request()->routeIs('docentes.*') ? 'active' : '' }}" href="{{ route('docentes.index') }}">
                     <i class="fas fa-chalkboard-teacher"></i> Docentes
                 </a>
+                
+                <a class="nav-link {{ request()->routeIs('materias.*') ? 'active' : '' }}" href="{{ route('materias.index') }}">
+                    <i class="fas fa-book"></i> Materias
+                </a>
+                
+                <a class="nav-link {{ request()->routeIs('aulas.*') ? 'active' : '' }}" href="{{ route('aulas.index') }}">
+                    <i class="fas fa-door-open"></i> Aulas
+                </a>
+                
+                <a class="nav-link {{ request()->routeIs('grupos.*') ? 'active' : '' }}" href="{{ route('grupos.index') }}">
+                    <i class="fas fa-users"></i> Grupos
+                </a>
+                
+                <a class="nav-link {{ request()->routeIs('semestres.*') ? 'active' : '' }}" href="{{ route('semestres.index') }}">
+                    <i class="fas fa-calendar-alt"></i> Semestres
+                </a>
+                
+                <a class="nav-link {{ request()->routeIs('modulos.*') ? 'active' : '' }}" href="{{ route('modulos.index') }}">
+                    <i class="fas fa-building"></i> Módulos
+                </a>
                 @endif
+                
+                <!-- Sección de Horarios -->
+                <div class="mt-3">
+                    <small class="text-white-50 px-3">HORARIOS</small>
+                </div>
+                
+                @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Coordinador'))
+                <a class="nav-link {{ request()->routeIs('horarios.asignar') ? 'active' : '' }}" href="{{ route('horarios.asignar') }}">
+                    <i class="fas fa-calendar-plus"></i> Asignar Horario
+                </a>
+                @endif
+                
+                <a class="nav-link {{ request()->routeIs('horarios.docente') ? 'active' : '' }}" href="{{ route('horarios.docente') }}">
+                    <i class="fas fa-calendar-alt"></i> Por Docente
+                </a>
+                
+                @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Coordinador') || auth()->user()->hasRole('Docente'))
+                <a class="nav-link {{ request()->routeIs('horarios.grupo') ? 'active' : '' }}" href="{{ route('horarios.grupo') }}">
+                    <i class="fas fa-calendar"></i> Por Grupo
+                </a>
+                @endif
+                
+                <!-- Configuración -->
+                <div class="mt-3">
+                    <small class="text-white-50 px-3">CONFIGURACIÓN</small>
+                </div>
                 
                 <a class="nav-link {{ request()->routeIs('change-password') ? 'active' : '' }}" href="{{ route('change-password') }}">
                     <i class="fas fa-key"></i> Cambiar Contraseña

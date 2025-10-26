@@ -68,6 +68,26 @@ class Usuario extends Authenticatable
     }
 
     /**
+     * Relación con Grupos (como docente)
+     */
+    public function grupos()
+    {
+        return $this->belongsToMany(Grupo::class, 'grupo_usuario', 'id_usuario', 'id_grupo');
+    }
+
+    /**
+     * Obtener horarios del docente a través de sus grupos asignados
+     */
+    public function horarios()
+    {
+        return Horario::whereIn('id_grupo', function($query) {
+            $query->select('id_grupo')
+                ->from('grupo_usuario')
+                ->where('id_usuario', $this->id);
+        });
+    }
+
+    /**
      * Verificar si el usuario tiene un rol específico
      */
     public function hasRole($roleDescription)

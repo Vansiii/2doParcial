@@ -157,7 +157,8 @@ class DocenteController extends Controller
     }
 
     /**
-     * Actualizar docente
+     * CU06: Modificar Docente
+     * Actores: Administrador, Coordinador
      */
     public function update(Request $request, $id)
     {
