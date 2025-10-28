@@ -73,19 +73,40 @@
                     </h6>
                 </div>
                 <div class="card-body">
-                    @if($materia->docentes->count() > 0)
+                    @php
+                        // Obtener docentes únicos a través de los grupos
+                        $docentes = collect();
+                        foreach($materia->grupos as $grupo) {
+                            foreach($grupo->docentes as $docente) {
+                                if (!$docentes->contains('id', $docente->id)) {
+                                    $docentes->push($docente);
+                                }
+                            }
+                        }
+                    @endphp
+                    
+                    @if($docentes->count() > 0)
                         <ul class="list-group list-group-flush">
-                            @foreach($materia->docentes as $docente)
+                            @foreach($docentes as $docente)
                                 <li class="list-group-item px-0">
                                     <i class="fas fa-user-tie me-2 text-primary"></i>
                                     {{ $docente->nombre }}
+                                    <br>
+                                    <small class="text-muted">
+                                        Grupos: 
+                                        @foreach($materia->grupos->where(function($g) use ($docente) {
+                                            return $g->docentes->contains('id', $docente->id);
+                                        }) as $grupo)
+                                            <span class="badge bg-success">{{ $grupo->sigla }}</span>
+                                        @endforeach
+                                    </small>
                                 </li>
                             @endforeach
                         </ul>
                     @else
                         <p class="text-muted mb-0">
                             <i class="fas fa-info-circle me-1"></i>
-                            No hay docentes asignados
+                            No hay docentes asignados a los grupos de esta materia
                         </p>
                     @endif
                 </div>

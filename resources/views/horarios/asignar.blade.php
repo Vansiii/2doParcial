@@ -116,64 +116,69 @@
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
                                     </div>
-
-                                    <div class="col-md-2">
-                                        <label for="horaini" class="form-label">
-                                            Hora Inicio <span class="text-danger">*</span>
-                                        </label>
-                                        <input type="time" 
-                                               class="form-control @error('horaini') is-invalid @enderror" 
-                                               id="horaini" 
-                                               name="horaini" 
-                                               value="{{ old('horaini') }}" 
-                                               required>
-                                        @error('horaini')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-
-                                    <div class="col-md-2">
-                                        <label for="horafin" class="form-label">
-                                            Hora Fin <span class="text-danger">*</span>
-                                        </label>
-                                        <input type="time" 
-                                               class="form-control @error('horafin') is-invalid @enderror" 
-                                               id="horafin" 
-                                               name="horafin" 
-                                               value="{{ old('horafin') }}" 
-                                               required>
-                                        @error('horafin')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </div>
                                 </div>
 
                                 <div class="row g-3 mt-2">
-                                    <div class="col-md-6">
+                                    <div class="col-12">
                                         <label class="form-label">
-                                            Días <span class="text-danger">*</span>
+                                            Horarios por Día <span class="text-danger">*</span>
                                         </label>
-                                        <div class="d-flex flex-wrap gap-2">
-                                            @foreach($dias as $dia)
-                                                <div class="form-check">
-                                                    <input class="form-check-input @error('dias') is-invalid @enderror" 
-                                                           type="checkbox" 
-                                                           name="dias[]" 
-                                                           value="{{ $dia->id }}"
-                                                           id="dia_{{ $dia->id }}"
-                                                           {{ in_array($dia->id, old('dias', [])) ? 'checked' : '' }}>
-                                                    <label class="form-check-label" for="dia_{{ $dia->id }}">
-                                                        {{ $dia->nombre }}
-                                                    </label>
-                                                </div>
-                                            @endforeach
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            Seleccione los días y configure el horario específico para cada uno
                                         </div>
-                                        @error('dias')
-                                            <div class="invalid-feedback d-block">{{ $message }}</div>
-                                        @enderror
-                                        <small class="text-muted">Seleccione los días en que se dictará la clase</small>
                                     </div>
                                 </div>
+
+                                <div id="dias-container" class="row g-3">
+                                    @foreach($dias as $dia)
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="card border-secondary">
+                                                <div class="card-body">
+                                                    <div class="form-check mb-3">
+                                                        <input class="form-check-input dia-checkbox" 
+                                                               type="checkbox" 
+                                                               name="dias_seleccionados[]" 
+                                                               value="{{ $dia->id }}"
+                                                               id="dia_check_{{ $dia->id }}"
+                                                               onchange="toggleDiaFields({{ $dia->id }})"
+                                                               {{ in_array($dia->id, old('dias_seleccionados', [])) ? 'checked' : '' }}>
+                                                        <label class="form-check-label fw-bold" for="dia_check_{{ $dia->id }}">
+                                                            <i class="fas fa-calendar-day me-1"></i>{{ $dia->nombre }}
+                                                        </label>
+                                                    </div>
+                                                    
+                                                    <div id="fields_{{ $dia->id }}" style="display: {{ in_array($dia->id, old('dias_seleccionados', [])) ? 'block' : 'none' }};">
+                                                        <div class="mb-2">
+                                                            <label for="horaini_{{ $dia->id }}" class="form-label small">
+                                                                <i class="fas fa-clock me-1"></i>Hora Inicio
+                                                            </label>
+                                                            <input type="time" 
+                                                                   class="form-control form-control-sm" 
+                                                                   id="horaini_{{ $dia->id }}" 
+                                                                   name="horaini[{{ $dia->id }}]" 
+                                                                   value="{{ old('horaini.'.$dia->id) }}">
+                                                        </div>
+                                                        <div class="mb-2">
+                                                            <label for="horafin_{{ $dia->id }}" class="form-label small">
+                                                                <i class="fas fa-clock me-1"></i>Hora Fin
+                                                            </label>
+                                                            <input type="time" 
+                                                                   class="form-control form-control-sm" 
+                                                                   id="horafin_{{ $dia->id }}" 
+                                                                   name="horafin[{{ $dia->id }}]" 
+                                                                   value="{{ old('horafin.'.$dia->id) }}">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+
+                                @error('dias_seleccionados')
+                                    <div class="alert alert-danger mt-2">{{ $message }}</div>
+                                @enderror
 
                                 <div class="alert alert-info mt-3">
                                     <i class="fas fa-info-circle me-2"></i>
@@ -318,4 +323,67 @@
         </div>
     </div>
 </div>
+
+<script>
+function toggleDiaFields(diaId) {
+    const checkbox = document.getElementById('dia_check_' + diaId);
+    const fields = document.getElementById('fields_' + diaId);
+    const horaini = document.getElementById('horaini_' + diaId);
+    const horafin = document.getElementById('horafin_' + diaId);
+    
+    if (checkbox.checked) {
+        fields.style.display = 'block';
+        horaini.required = true;
+        horafin.required = true;
+    } else {
+        fields.style.display = 'none';
+        horaini.required = false;
+        horafin.required = false;
+        horaini.value = '';
+        horafin.value = '';
+    }
+}
+
+// Validación del formulario antes de enviar
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form[action="{{ route('horarios.guardar') }}"]');
+    
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const checkboxes = document.querySelectorAll('.dia-checkbox:checked');
+            
+            if (checkboxes.length === 0) {
+                e.preventDefault();
+                alert('Debe seleccionar al menos un día');
+                return false;
+            }
+            
+            let valid = true;
+            checkboxes.forEach(function(checkbox) {
+                const diaId = checkbox.value;
+                const horaini = document.getElementById('horaini_' + diaId);
+                const horafin = document.getElementById('horafin_' + diaId);
+                
+                if (!horaini.value || !horafin.value) {
+                    valid = false;
+                    alert('Debe completar hora de inicio y fin para ' + checkbox.labels[0].textContent.trim());
+                    return false;
+                }
+                
+                if (horaini.value >= horafin.value) {
+                    valid = false;
+                    alert('La hora de fin debe ser posterior a la hora de inicio para ' + checkbox.labels[0].textContent.trim());
+                    return false;
+                }
+            });
+            
+            if (!valid) {
+                e.preventDefault();
+                return false;
+            }
+        });
+    }
+});
+</script>
 @endsection
+

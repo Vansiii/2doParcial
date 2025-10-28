@@ -51,22 +51,22 @@ Route::middleware('auth')->group(function () {
         Route::get('grupos/{sigla}/asignar-docentes', [GrupoController::class, 'asignarDocentes'])->name('grupos.asignar-docentes');
         Route::post('grupos/{sigla}/guardar-docentes', [GrupoController::class, 'guardarDocentes'])->name('grupos.guardar-docentes');
         
-        // Gestionar Semestres
+        // CU10: Gestionar Semestres
         Route::resource('semestres', SemestreController::class);
         
-        // Gestionar Módulos
+        // CU11: Gestionar Módulos
         Route::resource('modulos', ModuloController::class);
         
-        // CU10: Asignar Horario Manualmente
+        // CU12: Asignar Horario Manualmente
         Route::get('horarios/asignar', [HorarioController::class, 'asignar'])->name('horarios.asignar');
         Route::post('horarios/guardar', [HorarioController::class, 'guardar'])->name('horarios.guardar');
         Route::delete('horarios/{id}', [HorarioController::class, 'destroy'])->name('horarios.destroy');
     });
     
-    // CU11: Consultar Horario por Docente (todos los usuarios)
+    // CU13: Consultar Horario por Docente (todos los usuarios)
     Route::get('horarios/docente/{id?}', [HorarioController::class, 'porDocente'])->name('horarios.docente');
     
-    // CU12: Consultar Horario por Grupo (Administrador, Coordinador, Docente)
+    // CU14: Consultar Horario por Grupo (Administrador, Coordinador, Docente)
     Route::middleware('role:Administrador,Coordinador,Docente')->group(function () {
         Route::get('horarios/grupo/{id?}', [HorarioController::class, 'porGrupo'])->name('horarios.grupo');
     });

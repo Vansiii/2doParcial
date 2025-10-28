@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\DB;
 class HorarioController extends Controller
 {
     /**
-     * CU10: Mostrar formulario para asignar horario
+     * CU12: Mostrar formulario para asignar horario
      * Actores: Administrador, Coordinador
      */
     public function asignar(Request $request)
@@ -54,7 +54,7 @@ class HorarioController extends Controller
     }
 
     /**
-     * CU10: Guardar horario asignado
+     * CU12: Guardar horario asignado
      */
     public function guardar(Request $request)
     {
@@ -62,73 +62,92 @@ class HorarioController extends Controller
             'sigla_materia' => 'required|exists:materia,sigla',
             'nroaula' => 'required|exists:aula,nroaula',
             'id_grupo' => 'required|exists:grupo,id',
-            'horaini' => 'required|date_format:H:i',
-            'horafin' => 'required|date_format:H:i|after:horaini',
-            'dias' => 'required|array|min:1',
-            'dias.*' => 'exists:dia,id',
+            'dias_seleccionados' => 'required|array|min:1',
+            'dias_seleccionados.*' => 'exists:dia,id',
+            'horaini' => 'required|array',
+            'horafin' => 'required|array',
         ], [
             'sigla_materia.required' => 'Debe seleccionar una materia',
             'nroaula.required' => 'Debe seleccionar un aula',
             'id_grupo.required' => 'Debe seleccionar un grupo',
-            'horaini.required' => 'Debe ingresar la hora de inicio',
-            'horafin.required' => 'Debe ingresar la hora de fin',
-            'horafin.after' => 'La hora de fin debe ser posterior a la hora de inicio',
-            'dias.required' => 'Debe seleccionar al menos un día',
+            'dias_seleccionados.required' => 'Debe seleccionar al menos un día',
+            'dias_seleccionados.min' => 'Debe seleccionar al menos un día',
         ]);
 
         try {
             DB::beginTransaction();
 
-            // Calcular tiempo en horas
-            $horaIni = \Carbon\Carbon::parse($request->horaini);
-            $horaFin = \Carbon\Carbon::parse($request->horafin);
-            $tiempoH = $horaFin->diffInMinutes($horaIni) / 60;
+            $horariosCreados = [];
+            $materia = Materia::find($request->sigla_materia);
 
-            // Crear el horario
-            $horario = Horario::create([
-                'horaini' => $request->horaini,
-                'horafin' => $request->horafin,
-                'tiempoh' => $tiempoH,
-                'nroaula' => $request->nroaula,
-                'id_grupo' => $request->id_grupo,
-            ]);
+            // Crear un horario para cada día seleccionado con su hora específica
+            foreach ($request->dias_seleccionados as $diaId) {
+                // Validar que existan las horas para este día
+                if (!isset($request->horaini[$diaId]) || !isset($request->horafin[$diaId])) {
+                    throw new \Exception("Faltan horas para el día ID: {$diaId}");
+                }
 
-            // Asignar materia
-            $horario->materias()->attach($request->sigla_materia);
+                $horaIni = $request->horaini[$diaId];
+                $horaFin = $request->horafin[$diaId];
 
-            // Asignar días
-            $horario->dias()->attach($request->dias);
+                // Validar que la hora fin sea posterior a la hora inicio
+                if ($horaIni >= $horaFin) {
+                    $dia = Dia::find($diaId);
+                    throw new \Exception("La hora de fin debe ser posterior a la hora de inicio para {$dia->nombre}");
+                }
+
+                // Calcular tiempo en horas
+                $horaIniCarbon = \Carbon\Carbon::parse($horaIni);
+                $horaFinCarbon = \Carbon\Carbon::parse($horaFin);
+                $tiempoH = $horaFinCarbon->diffInMinutes($horaIniCarbon) / 60;
+
+                // Crear el horario para este día específico
+                $horario = Horario::create([
+                    'horaini' => $horaIni,
+                    'horafin' => $horaFin,
+                    'tiempoh' => $tiempoH,
+                    'nroaula' => $request->nroaula,
+                    'id_grupo' => $request->id_grupo,
+                ]);
+
+                // Asignar materia
+                $horario->materias()->attach($request->sigla_materia);
+
+                // Asignar solo este día
+                $horario->dias()->attach($diaId);
+
+                $horariosCreados[] = $horario->id;
+            }
 
             DB::commit();
 
-            $materia = Materia::find($request->sigla_materia);
-            
             Bitacora::registrar(
-                'Asignación de horario',
+                'Asignación de horarios',
                 true,
-                'Se asignó horario: Materia ' . $materia->nombre . ' (' . $request->sigla_materia . '), Grupo ID ' . $request->id_grupo . ', Aula ' . $request->nroaula,
+                'Se asignaron ' . count($horariosCreados) . ' horarios: Materia ' . $materia->nombre . 
+                ' (' . $request->sigla_materia . '), Grupo ID ' . $request->id_grupo . ', Aula ' . $request->nroaula,
                 auth()->id()
             );
 
             return redirect()->route('horarios.asignar')
-                ->with('success', 'Horario asignado correctamente');
+                ->with('success', 'Horarios asignados correctamente (' . count($horariosCreados) . ' horarios creados)');
         } catch (\Exception $e) {
             DB::rollBack();
             
             Bitacora::registrar(
-                'Error al asignar horario',
+                'Error al asignar horarios',
                 false,
                 'Error: ' . $e->getMessage(),
                 auth()->id()
             );
 
-            return back()->withErrors(['error' => 'Error al asignar el horario: ' . $e->getMessage()])
+            return back()->withErrors(['error' => 'Error al asignar los horarios: ' . $e->getMessage()])
                 ->withInput();
         }
     }
 
     /**
-     * CU11: Consultar Horario por Docente
+     * CU13: Consultar Horario por Docente
      * Actores: Todos
      */
     public function porDocente(Request $request, $id = null)
@@ -173,7 +192,7 @@ class HorarioController extends Controller
     }
 
     /**
-     * CU12: Consultar Horario por Grupo
+     * CU14: Consultar Horario por Grupo
      * Actores: Administrador, Coordinador, Docente
      */
     public function porGrupo(Request $request, $id = null)
@@ -207,7 +226,7 @@ class HorarioController extends Controller
     }
 
     /**
-     * Eliminar un horario
+     * CU12: Eliminar un horario
      */
     public function destroy($id)
     {

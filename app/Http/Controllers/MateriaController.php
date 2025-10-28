@@ -101,7 +101,7 @@ class MateriaController extends Controller
      */
     public function show($sigla)
     {
-        $materia = Materia::with(['semestre', 'docentes', 'grupos'])->findOrFail($sigla);
+        $materia = Materia::with(['semestre', 'grupos.docentes'])->findOrFail($sigla);
 
         Bitacora::registrar(
             'Consulta de materia',

@@ -120,17 +120,21 @@
                 @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Coordinador'))
                 <!-- Sección de Gestión -->
                 <div class="mt-3">
-                    <small class="text-white-50 px-3">GESTIÓN</small>
+                    <small class="text-white-50 px-3">GESTIONAR DOCENTES</small>
                 </div>
                 
                 <a class="nav-link {{ request()->routeIs('docentes.*') ? 'active' : '' }}" href="{{ route('docentes.index') }}">
                     <i class="fas fa-chalkboard-teacher"></i> Docentes
                 </a>
-                
+                <div class="mt-3">
+                    <small class="text-white-50 px-3">GESTIONAR MATERIAS</small>
+                </div>                
                 <a class="nav-link {{ request()->routeIs('materias.*') ? 'active' : '' }}" href="{{ route('materias.index') }}">
                     <i class="fas fa-book"></i> Materias
                 </a>
-                
+                <div class="mt-3">
+                    <small class="text-white-50 px-3">GESTIONAR CLASES</small>
+                </div>                
                 <a class="nav-link {{ request()->routeIs('aulas.*') ? 'active' : '' }}" href="{{ route('aulas.index') }}">
                     <i class="fas fa-door-open"></i> Aulas
                 </a>
@@ -138,22 +142,22 @@
                 <a class="nav-link {{ request()->routeIs('grupos.*') ? 'active' : '' }}" href="{{ route('grupos.index') }}">
                     <i class="fas fa-users"></i> Grupos
                 </a>
-                
-                <a class="nav-link {{ request()->routeIs('semestres.*') ? 'active' : '' }}" href="{{ route('semestres.index') }}">
-                    <i class="fas fa-calendar-alt"></i> Semestres
-                </a>
-                
+
                 <a class="nav-link {{ request()->routeIs('modulos.*') ? 'active' : '' }}" href="{{ route('modulos.index') }}">
                     <i class="fas fa-building"></i> Módulos
-                </a>
+                </a>                
                 @endif
                 
                 <!-- Sección de Horarios -->
                 <div class="mt-3">
-                    <small class="text-white-50 px-3">HORARIOS</small>
+                    <small class="text-white-50 px-3">GESTIONAR HORARIOS</small>
                 </div>
                 
                 @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Coordinador'))
+                <a class="nav-link {{ request()->routeIs('semestres.*') ? 'active' : '' }}" href="{{ route('semestres.index') }}">
+                    <i class="fas fa-calendar-alt"></i> Semestres
+                </a>                
+
                 <a class="nav-link {{ request()->routeIs('horarios.asignar') ? 'active' : '' }}" href="{{ route('horarios.asignar') }}">
                     <i class="fas fa-calendar-plus"></i> Asignar Horario
                 </a>
@@ -171,7 +175,7 @@
                 
                 <!-- Configuración -->
                 <div class="mt-3">
-                    <small class="text-white-50 px-3">CONFIGURACIÓN</small>
+                    <small class="text-white-50 px-3">GESTIONAR PERFIL</small>
                 </div>
                 
                 <a class="nav-link {{ request()->routeIs('change-password') ? 'active' : '' }}" href="{{ route('change-password') }}">
