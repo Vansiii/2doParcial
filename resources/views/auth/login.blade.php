@@ -13,6 +13,13 @@
                     <p class="text-muted">Iniciar Sesión</p>
                 </div>
                 
+                @if(session('error'))
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-triangle"></i> {{ session('error') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                @endif
+                
                 @if($errors->any())
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         <i class="fas fa-exclamation-triangle"></i>

@@ -62,10 +62,11 @@ class AuthController extends Controller
             ])->withInput();
         }
 
+        // Regenerar la sesión ANTES de autenticar para evitar problemas de CSRF
+        $request->session()->regenerate();
+
         // Autenticar usuario
         Auth::login($usuario, $request->filled('remember'));
-
-        $request->session()->regenerate();
 
         // Registrar en bitácora
         Bitacora::registrar(
@@ -75,7 +76,8 @@ class AuthController extends Controller
             $usuario->id
         );
 
-        return redirect()->intended('/dashboard')->with('success', 'Bienvenido ' . $usuario->nombre);
+        // Redirigir directamente a dashboard (sin intended)
+        return redirect('/dashboard')->with('success', 'Bienvenido ' . $usuario->nombre);
     }
 
     /**

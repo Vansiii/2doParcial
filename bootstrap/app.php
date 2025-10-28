@@ -14,7 +14,20 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
         ]);
+        
+        // Agregar middleware global para manejar errores 419
+        $middleware->append(\App\Http\Middleware\HandleTokenMismatch::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Manejar error 419 - Token Mismatch (CSRF)
+        $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, $request) {
+            // Limpiar y regenerar la sesión
+            if ($request->hasSession()) {
+                $request->session()->flush();
+                $request->session()->regenerate();
+            }
+            
+            return redirect()->route('login')
+                ->with('error', 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+        });
     })->create();
