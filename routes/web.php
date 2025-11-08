@@ -10,6 +10,9 @@ use App\Http\Controllers\GrupoController;
 use App\Http\Controllers\HorarioController;
 use App\Http\Controllers\SemestreController;
 use App\Http\Controllers\ModuloController;
+use App\Http\Controllers\CarreraController;
+use App\Http\Controllers\UsuarioController;
+use App\Http\Controllers\AsistenciaController;
 
 // Ruta principal - redirigir a login
 Route::get('/', function () {
@@ -34,6 +37,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/change-password', [AuthController::class, 'showChangePasswordForm'])->name('change-password');
     Route::post('/change-password', [AuthController::class, 'changePassword'])->name('change-password.post');
     
+    // CU18: Gestionar Usuarios (solo Administrador)
+    Route::middleware('role:Administrador')->group(function () {
+        Route::resource('usuarios', UsuarioController::class);
+    });
+
     // CU04 y CU05: Gestión de Docentes (solo Administrador y Coordinador)
     Route::middleware('role:Administrador,Coordinador')->group(function () {
         Route::resource('docentes', DocenteController::class);
@@ -58,6 +66,9 @@ Route::middleware('auth')->group(function () {
         // CU11: Gestionar Módulos
         Route::resource('modulos', ModuloController::class);
         
+        // CU19: Gestionar Carreras
+        Route::resource('carreras', CarreraController::class);
+        
         // CU12: Asignar Horario Manualmente
         Route::get('horarios/asignar', [HorarioController::class, 'asignar'])->name('horarios.asignar');
         Route::post('horarios/guardar', [HorarioController::class, 'guardar'])->name('horarios.guardar');
@@ -70,5 +81,18 @@ Route::middleware('auth')->group(function () {
     // CU14: Consultar Horario por Grupo (Administrador, Coordinador, Docente)
     Route::middleware('role:Administrador,Coordinador,Docente')->group(function () {
         Route::get('horarios/grupo/{id?}', [HorarioController::class, 'porGrupo'])->name('horarios.grupo');
+    });
+
+    // CU15: Gestionar Asistencia
+    // Marcar asistencia (solo Docentes)
+    Route::middleware('role:Docente')->group(function () {
+        Route::get('asistencias/marcar', [AsistenciaController::class, 'mostrarFormulario'])->name('asistencias.marcar');
+        Route::post('asistencias/marcar', [AsistenciaController::class, 'marcar'])->name('asistencias.marcar.post');
+        Route::get('asistencias/mis-asistencias', [AsistenciaController::class, 'misAsistencias'])->name('asistencias.mis-asistencias');
+    });
+
+    // Consultar asistencias de todos los docentes (Administrador, Autoridad, Coordinador)
+    Route::middleware('role:Administrador,Autoridad,Coordinador')->group(function () {
+        Route::get('asistencias', [AsistenciaController::class, 'index'])->name('asistencias.index');
     });
 });

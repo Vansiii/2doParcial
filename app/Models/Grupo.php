@@ -65,4 +65,31 @@ class Grupo extends Model
     {
         return $this->hasMany(Horario::class, 'id_grupo', 'id');
     }
+
+    /**
+     * Obtener docentes asignados al grupo
+     * Un grupo tiene docentes a través de grupo_materia
+     */
+    public function docentes()
+    {
+        return $this->belongsToMany(
+            Usuario::class,
+            'grupo_materia',
+            'id_grupo',
+            'id_docente'
+        )->withPivot('sigla_materia');
+    }
+
+    /**
+     * Obtener materias del grupo a través de grupo_materia
+     */
+    public function materias()
+    {
+        return $this->belongsToMany(
+            Materia::class,
+            'grupo_materia',
+            'id_grupo',
+            'sigla_materia'
+        )->withPivot('id_docente');
+    }
 }

@@ -21,7 +21,7 @@ class Carrera extends Model
     ];
 
     /**
-     * Relación con Materias
+     * Relación con Materias a través de Carrera_Materia
      */
     public function materias()
     {

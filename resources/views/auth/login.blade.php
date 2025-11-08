@@ -34,18 +34,18 @@
                     @csrf
                     
                     <div class="mb-3">
-                        <label for="correo" class="form-label">
-                            <i class="fas fa-envelope"></i> Correo Electrónico
+                        <label for="codigo" class="form-label">
+                            <i class="fas fa-id-card"></i> Código de Usuario
                         </label>
-                        <input type="email" 
-                               class="form-control @error('correo') is-invalid @enderror" 
-                               id="correo" 
-                               name="correo" 
-                               value="{{ old('correo') }}" 
+                        <input type="number" 
+                               class="form-control @error('codigo') is-invalid @enderror" 
+                               id="codigo" 
+                               name="codigo" 
+                               value="{{ old('codigo') }}" 
                                required 
                                autofocus
-                               placeholder="ejemplo@correo.com">
-                        @error('correo')
+                               placeholder="Ingrese su código">
+                        @error('codigo')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>

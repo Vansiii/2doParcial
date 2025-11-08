@@ -7,6 +7,8 @@ use App\Models\Aula;
 use App\Models\Grupo;
 use App\Models\Semestre;
 use App\Models\Modulo;
+use App\Models\Carrera;
+use App\Models\Usuario;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -20,11 +22,13 @@ class DashboardController extends Controller
         $stats = [];
         if ($usuario->hasRole('Administrador') || $usuario->hasRole('Coordinador')) {
             $stats = [
+                'usuarios' => Usuario::count(),
                 'materias' => Materia::count(),
                 'aulas' => Aula::count(),
                 'grupos' => Grupo::count(),
                 'semestres' => Semestre::count(),
                 'modulos' => Modulo::count(),
+                'carreras' => Carrera::count(),
             ];
         }
         

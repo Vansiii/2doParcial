@@ -15,6 +15,7 @@ class Usuario extends Authenticatable
     public $timestamps = false;
 
     protected $fillable = [
+        'codigo',
         'nombre',
         'correo',
         'telefono',
@@ -48,6 +49,14 @@ class Usuario extends Authenticatable
     public function getAuthIdentifier()
     {
         return $this->id;
+    }
+
+    /**
+     * Get the column name for the "username" (código in this case)
+     */
+    public function username()
+    {
+        return 'codigo';
     }
 
     /**

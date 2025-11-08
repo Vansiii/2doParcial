@@ -72,4 +72,20 @@ class Horario extends Model
     {
         return $this->belongsTo(Grupo::class, 'id_grupo', 'id');
     }
+
+    /**
+     * Accessor para hora_inicio (mapea horaini)
+     */
+    public function getHoraInicioAttribute()
+    {
+        return $this->attributes['horaini'];
+    }
+
+    /**
+     * Accessor para hora_fin (mapea horafin)
+     */
+    public function getHoraFinAttribute()
+    {
+        return $this->attributes['horafin'];
+    }
 }

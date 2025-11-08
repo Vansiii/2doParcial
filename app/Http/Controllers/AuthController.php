@@ -25,26 +25,26 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'correo' => 'required|email',
+            'codigo' => 'required|numeric',
             'password' => 'required',
         ], [
-            'correo.required' => 'El correo es obligatorio',
-            'correo.email' => 'Ingrese un correo válido',
+            'codigo.required' => 'El código es obligatorio',
+            'codigo.numeric' => 'El código debe ser numérico',
             'password.required' => 'La contraseña es obligatoria',
         ]);
 
-        $usuario = Usuario::where('correo', $request->correo)->first();
+        $usuario = Usuario::where('codigo', $request->codigo)->first();
 
         if (!$usuario) {
             Bitacora::registrar(
                 'Intento de inicio de sesión',
                 false,
-                'Usuario no encontrado: ' . $request->correo,
+                'Usuario no encontrado con código: ' . $request->codigo,
                 null
             );
 
             return back()->withErrors([
-                'correo' => 'Las credenciales no coinciden con nuestros registros.',
+                'codigo' => 'Las credenciales no coinciden con nuestros registros.',
             ])->withInput();
         }
 
@@ -53,12 +53,12 @@ class AuthController extends Controller
             Bitacora::registrar(
                 'Intento de inicio de sesión',
                 false,
-                'Contraseña incorrecta para: ' . $request->correo,
+                'Contraseña incorrecta para código: ' . $request->codigo,
                 $usuario->id
             );
 
             return back()->withErrors([
-                'correo' => 'Las credenciales no coinciden con nuestros registros.',
+                'codigo' => 'Las credenciales no coinciden con nuestros registros.',
             ])->withInput();
         }
 

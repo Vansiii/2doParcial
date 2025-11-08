@@ -117,6 +117,17 @@
                     <i class="fas fa-tachometer-alt"></i> Dashboard
                 </a>
                 
+                @if(auth()->user()->hasRole('Administrador'))
+                <!-- Sección de Gestión de Usuarios -->
+                <div class="mt-3">
+                    <small class="text-white-50 px-3">GESTIONAR USUARIOS</small>
+                </div>
+                
+                <a class="nav-link {{ request()->routeIs('usuarios.*') ? 'active' : '' }}" href="{{ route('usuarios.index') }}">
+                    <i class="fas fa-users"></i> Usuarios
+                </a>
+                @endif
+
                 @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Coordinador'))
                 <!-- Sección de Gestión -->
                 <div class="mt-3">
@@ -131,6 +142,9 @@
                 </div>                
                 <a class="nav-link {{ request()->routeIs('materias.*') ? 'active' : '' }}" href="{{ route('materias.index') }}">
                     <i class="fas fa-book"></i> Materias
+                </a>
+                <a class="nav-link {{ request()->routeIs('carreras.*') ? 'active' : '' }}" href="{{ route('carreras.index') }}">
+                    <i class="fas fa-graduation-cap"></i> Carreras
                 </a>
                 <div class="mt-3">
                     <small class="text-white-50 px-3">GESTIONAR CLASES</small>
@@ -170,6 +184,26 @@
                 @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Coordinador') || auth()->user()->hasRole('Docente'))
                 <a class="nav-link {{ request()->routeIs('horarios.grupo') ? 'active' : '' }}" href="{{ route('horarios.grupo') }}">
                     <i class="fas fa-calendar"></i> Por Grupo
+                </a>
+                @endif
+
+                <!-- Sección de Asistencias -->
+                <div class="mt-3">
+                    <small class="text-white-50 px-3">GESTIONAR ASISTENCIAS</small>
+                </div>
+
+                @if(auth()->user()->hasRole('Docente'))
+                <a class="nav-link {{ request()->routeIs('asistencias.marcar') ? 'active' : '' }}" href="{{ route('asistencias.marcar') }}">
+                    <i class="fas fa-clipboard-check"></i> Marcar Asistencia
+                </a>
+                <a class="nav-link {{ request()->routeIs('asistencias.mis-asistencias') ? 'active' : '' }}" href="{{ route('asistencias.mis-asistencias') }}">
+                    <i class="fas fa-history"></i> Mis Asistencias
+                </a>
+                @endif
+
+                @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Autoridad') || auth()->user()->hasRole('Coordinador'))
+                <a class="nav-link {{ request()->routeIs('asistencias.index') ? 'active' : '' }}" href="{{ route('asistencias.index') }}">
+                    <i class="fas fa-clipboard-list"></i> Consultar Asistencias
                 </a>
                 @endif
                 
