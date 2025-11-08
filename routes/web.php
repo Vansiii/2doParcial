@@ -47,9 +47,10 @@ Route::middleware('auth')->group(function () {
         // CU09: Gestionar Grupos
         Route::resource('grupos', GrupoController::class);
         
-        // Asignar Docentes a Grupos
+        // Asignar Docentes a Grupos (con grupo_materia)
         Route::get('grupos/{sigla}/asignar-docentes', [GrupoController::class, 'asignarDocentes'])->name('grupos.asignar-docentes');
         Route::post('grupos/{sigla}/guardar-docentes', [GrupoController::class, 'guardarDocentes'])->name('grupos.guardar-docentes');
+        Route::delete('grupos/{sigla}/eliminar-docente/{siglaMateria}', [GrupoController::class, 'eliminarDocente'])->name('grupos.eliminar-docente');
         
         // CU10: Gestionar Semestres
         Route::resource('semestres', SemestreController::class);

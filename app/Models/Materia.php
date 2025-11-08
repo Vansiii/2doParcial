@@ -30,11 +30,32 @@ class Materia extends Model
     }
 
     /**
-     * Relación con Grupos
+     * Relación con GrupoMateria
+     */
+    public function grupoMaterias()
+    {
+        return $this->hasMany(GrupoMateria::class, 'sigla_materia', 'sigla');
+    }
+
+    /**
+     * Relación con Grupos a través de GrupoMateria
      */
     public function grupos()
     {
-        return $this->belongsToMany(Grupo::class, 'grupo_materia', 'sigla_materia', 'id_grupo');
+        return $this->belongsToMany(Grupo::class, 'grupo_materia', 'sigla_materia', 'id_grupo')
+            ->withPivot('id_docente');
+    }
+
+    /**
+     * Obtener docente para un grupo específico
+     */
+    public function getDocenteParaGrupo($idGrupo)
+    {
+        $grupoMateria = GrupoMateria::where('sigla_materia', $this->sigla)
+            ->where('id_grupo', $idGrupo)
+            ->first();
+        
+        return $grupoMateria ? $grupoMateria->docente : null;
     }
 
     /**

@@ -22,13 +22,13 @@ class HorarioController extends Controller
     {
         $materias = Materia::orderBy('sigla')->get();
         $aulas = Aula::orderBy('nroaula')->get();
-        $grupos = Grupo::with('docentes')->orderBy('sigla')->get();
+        $grupos = Grupo::with('grupoMaterias.docente')->orderBy('sigla')->get();
         $dias = Dia::orderBy('id')->get();
 
         // Si hay filtros, mostrar horarios existentes
         $horarios = collect();
         if ($request->filled('sigla_materia') || $request->filled('id_grupo')) {
-            $query = Horario::with(['materias', 'aula', 'grupo.docentes', 'dias']);
+            $query = Horario::with(['materias', 'aula', 'grupo.grupoMaterias.docente', 'dias']);
             
             if ($request->filled('sigla_materia')) {
                 $query->whereHas('materias', function($q) use ($request) {
@@ -79,6 +79,7 @@ class HorarioController extends Controller
 
             $horariosCreados = [];
             $materia = Materia::find($request->sigla_materia);
+            $grupo = Grupo::with('docentes')->find($request->id_grupo);
 
             // Crear un horario para cada día seleccionado con su hora específica
             foreach ($request->dias_seleccionados as $diaId) {
@@ -95,6 +96,128 @@ class HorarioController extends Controller
                     $dia = Dia::find($diaId);
                     throw new \Exception("La hora de fin debe ser posterior a la hora de inicio para {$dia->nombre}");
                 }
+
+                // ===== VALIDACIÓN DE CONFLICTOS =====
+                
+                // 1. Conflicto de AULA (misma aula, mismo día, horas que se cruzan)
+                $conflictoAula = Horario::where('nroaula', $request->nroaula)
+                    ->whereHas('dias', function($q) use ($diaId) {
+                        $q->where('dia.id', $diaId);
+                    })
+                    ->where(function($query) use ($horaIni, $horaFin) {
+                        // Detectar cruce de horarios
+                        $query->where(function($q) use ($horaIni, $horaFin) {
+                            // El horario nuevo empieza durante un horario existente
+                            $q->where('horaini', '<=', $horaIni)
+                              ->where('horafin', '>', $horaIni);
+                        })->orWhere(function($q) use ($horaIni, $horaFin) {
+                            // El horario nuevo termina durante un horario existente
+                            $q->where('horaini', '<', $horaFin)
+                              ->where('horafin', '>=', $horaFin);
+                        })->orWhere(function($q) use ($horaIni, $horaFin) {
+                            // El horario nuevo contiene completamente a un horario existente
+                            $q->where('horaini', '>=', $horaIni)
+                              ->where('horafin', '<=', $horaFin);
+                        });
+                    })
+                    ->with(['materias', 'grupo'])
+                    ->first();
+
+                if ($conflictoAula) {
+                    $dia = Dia::find($diaId);
+                    $materiaConflicto = $conflictoAula->materias->first();
+                    throw new \Exception(
+                        "CONFLICTO DE AULA: El aula {$request->nroaula} ya está ocupada el {$dia->nombre} " .
+                        "de {$conflictoAula->horaini} a {$conflictoAula->horafin} " .
+                        "por {$materiaConflicto->nombre} (Grupo {$conflictoAula->grupo->sigla})"
+                    );
+                }
+
+                // 2. Conflicto de GRUPO (mismo grupo, mismo día, horas que se cruzan)
+                $conflictoGrupo = Horario::where('id_grupo', $request->id_grupo)
+                    ->whereHas('dias', function($q) use ($diaId) {
+                        $q->where('dia.id', $diaId);
+                    })
+                    ->where(function($query) use ($horaIni, $horaFin) {
+                        $query->where(function($q) use ($horaIni, $horaFin) {
+                            $q->where('horaini', '<=', $horaIni)
+                              ->where('horafin', '>', $horaIni);
+                        })->orWhere(function($q) use ($horaIni, $horaFin) {
+                            $q->where('horaini', '<', $horaFin)
+                              ->where('horafin', '>=', $horaFin);
+                        })->orWhere(function($q) use ($horaIni, $horaFin) {
+                            $q->where('horaini', '>=', $horaIni)
+                              ->where('horafin', '<=', $horaFin);
+                        });
+                    })
+                    ->with(['materias', 'aula'])
+                    ->first();
+
+                if ($conflictoGrupo) {
+                    $dia = Dia::find($diaId);
+                    $materiaConflicto = $conflictoGrupo->materias->first();
+                    throw new \Exception(
+                        "CONFLICTO DE GRUPO: El grupo {$grupo->sigla} ya tiene clase el {$dia->nombre} " .
+                        "de {$conflictoGrupo->horaini} a {$conflictoGrupo->horafin} " .
+                        "({$materiaConflicto->nombre} en aula {$conflictoGrupo->nroaula})"
+                    );
+                }
+
+                // 3. Conflicto de DOCENTE (mismo docente, mismo día, horas que se cruzan)
+                // Obtener el docente asignado a esta combinación grupo-materia
+                $grupoMateria = \App\Models\GrupoMateria::where('id_grupo', $request->id_grupo)
+                    ->where('sigla_materia', $request->sigla_materia)
+                    ->first();
+
+                if ($grupoMateria && $grupoMateria->docente) {
+                    $docente = $grupoMateria->docente;
+                    
+                    // Buscar si el docente tiene otro horario en el mismo día y hora
+                    // El docente puede tener conflicto con cualquier otra materia que dicte
+                    $conflictoDocente = Horario::whereHas('materias', function($queryMat) use ($docente) {
+                            // Buscar horarios de materias donde este docente está asignado
+                            $queryMat->whereIn('sigla', function($subQuery) use ($docente) {
+                                $subQuery->select('sigla_materia')
+                                    ->from('grupo_materia')
+                                    ->where('id_docente', $docente->id);
+                            });
+                        })
+                        ->whereIn('id_grupo', function($queryGrupo) use ($docente) {
+                            // Y que sean de grupos donde este docente está asignado
+                            $queryGrupo->select('id_grupo')
+                                ->from('grupo_materia')
+                                ->where('id_docente', $docente->id);
+                        })
+                        ->whereHas('dias', function($q) use ($diaId) {
+                            $q->where('dia.id', $diaId);
+                        })
+                        ->where(function($query) use ($horaIni, $horaFin) {
+                            $query->where(function($q) use ($horaIni, $horaFin) {
+                                $q->where('horaini', '<=', $horaIni)
+                                  ->where('horafin', '>', $horaIni);
+                            })->orWhere(function($q) use ($horaIni, $horaFin) {
+                                $q->where('horaini', '<', $horaFin)
+                                  ->where('horafin', '>=', $horaFin);
+                            })->orWhere(function($q) use ($horaIni, $horaFin) {
+                                $q->where('horaini', '>=', $horaIni)
+                                  ->where('horafin', '<=', $horaFin);
+                            });
+                        })
+                        ->with(['materias', 'grupo', 'aula'])
+                        ->first();
+
+                    if ($conflictoDocente) {
+                        $dia = Dia::find($diaId);
+                        $materiaConflicto = $conflictoDocente->materias->first();
+                        throw new \Exception(
+                            "CONFLICTO DE DOCENTE: El docente {$docente->nombre} ya tiene clase el {$dia->nombre} " .
+                            "de {$conflictoDocente->horaini} a {$conflictoDocente->horafin} " .
+                            "({$materiaConflicto->nombre}, Grupo {$conflictoDocente->grupo->sigla}, Aula {$conflictoDocente->nroaula})"
+                        );
+                    }
+                }
+
+                // ===== FIN DE VALIDACIÓN DE CONFLICTOS =====
 
                 // Calcular tiempo en horas
                 $horaIniCarbon = \Carbon\Carbon::parse($horaIni);
@@ -141,7 +264,7 @@ class HorarioController extends Controller
                 auth()->id()
             );
 
-            return back()->withErrors(['error' => 'Error al asignar los horarios: ' . $e->getMessage()])
+            return back()->withErrors(['error' => $e->getMessage()])
                 ->withInput();
         }
     }
@@ -172,10 +295,21 @@ class HorarioController extends Controller
         if ($id) {
             $docenteSeleccionado = Usuario::findOrFail($id);
             
-            // Obtener horarios del docente a través de sus grupos asignados
+            // Obtener horarios del docente a través de grupo_materia
             $horarios = Horario::with(['materias', 'aula', 'grupo', 'dias'])
-                ->whereHas('grupo.docentes', function($q) use ($id) {
-                    $q->where('id_usuario', $id);
+                ->whereHas('materias', function($queryMat) use ($id) {
+                    // Buscar horarios de materias donde este docente está asignado
+                    $queryMat->whereIn('sigla', function($subQuery) use ($id) {
+                        $subQuery->select('sigla_materia')
+                            ->from('grupo_materia')
+                            ->where('id_docente', $id);
+                    });
+                })
+                ->whereIn('id_grupo', function($queryGrupo) use ($id) {
+                    // Y que sean de grupos donde este docente está asignado
+                    $queryGrupo->select('id_grupo')
+                        ->from('grupo_materia')
+                        ->where('id_docente', $id);
                 })
                 ->orderBy('horaini')
                 ->get();
@@ -208,7 +342,7 @@ class HorarioController extends Controller
         }
 
         if ($id) {
-            $grupoSeleccionado = Grupo::with(['materias', 'docentes'])->findOrFail($id);
+            $grupoSeleccionado = Grupo::with(['materias', 'grupoMaterias.docente'])->findOrFail($id);
             $horarios = Horario::with(['materias', 'aula', 'dias'])
                 ->where('id_grupo', $id)
                 ->orderBy('horaini')

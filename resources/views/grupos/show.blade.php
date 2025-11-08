@@ -29,39 +29,35 @@
 
                     <div class="row mb-4">
                         <div class="col-md-4">
-                            <strong>Materias Asignadas:</strong>
+                            <strong>Materias y Docentes:</strong>
                         </div>
                         <div class="col-md-8">
-                            @if($grupo->materias && $grupo->materias->count() > 0)
-                                <div class="d-flex flex-wrap gap-2">
-                                    @foreach($grupo->materias as $materia)
-                                        <span class="badge bg-info fs-6">
-                                            {{ $materia->sigla }} - {{ $materia->nombre }}
-                                        </span>
-                                    @endforeach
+                            @if($grupo->grupoMaterias && $grupo->grupoMaterias->count() > 0)
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Materia</th>
+                                                <th>Docente</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($grupo->grupoMaterias as $gm)
+                                                <tr>
+                                                    <td><span class="badge bg-info">{{ $gm->materia->sigla }}</span></td>
+                                                    <td>
+                                                        @if($gm->docente)
+                                                            <i class="fas fa-user-tie text-primary me-1"></i>
+                                                            {{ $gm->docente->nombre }}
+                                                        @else
+                                                            <span class="text-muted">Sin asignar</span>
+                                                        @endif
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
                                 </div>
-                            @else
-                                <span class="text-muted">
-                                    <i class="fas fa-info-circle me-1"></i>Sin materias asignadas
-                                </span>
-                            @endif
-                        </div>
-                    </div>
-
-                    <div class="row mb-4">
-                        <div class="col-md-4">
-                            <strong>Docentes Asignados:</strong>
-                        </div>
-                        <div class="col-md-8">
-                            @if($grupo->docentes && $grupo->docentes->count() > 0)
-                                <ul class="list-group list-group-flush">
-                                    @foreach($grupo->docentes as $docente)
-                                        <li class="list-group-item px-0">
-                                            <i class="fas fa-user-tie text-primary me-2"></i>
-                                            {{ $docente->nombre }}
-                                        </li>
-                                    @endforeach
-                                </ul>
                             @else
                                 <div class="alert alert-warning">
                                     <i class="fas fa-exclamation-triangle me-2"></i>Sin docentes asignados
@@ -69,7 +65,7 @@
                             @endif
                             @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Coordinador'))
                             <a href="{{ route('grupos.asignar-docentes', $grupo->sigla) }}" class="btn btn-success btn-sm mt-2">
-                                <i class="fas fa-user-plus me-1"></i>Asignar Docentes
+                                <i class="fas fa-user-plus me-1"></i>Gestionar Docentes
                             </a>
                             @endif
                         </div>
@@ -143,11 +139,11 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-3">
                         <span><i class="fas fa-book text-primary me-2"></i>Materias:</span>
-                        <strong>{{ $grupo->materias->count() }}</strong>
+                        <strong>{{ $grupo->grupoMaterias ? $grupo->grupoMaterias->count() : 0 }}</strong>
                     </div>
                     <div class="d-flex justify-content-between mb-3">
-                        <span><i class="fas fa-user-tie text-info me-2"></i>Docentes:</span>
-                        <strong>{{ $grupo->docentes ? $grupo->docentes->count() : 0 }}</strong>
+                        <span><i class="fas fa-user-tie text-info me-2"></i>Asignaciones:</span>
+                        <strong>{{ $grupo->grupoMaterias ? $grupo->grupoMaterias->count() : 0 }}</strong>
                     </div>
                     <div class="d-flex justify-content-between">
                         <span><i class="fas fa-calendar text-success me-2"></i>Horarios:</span>

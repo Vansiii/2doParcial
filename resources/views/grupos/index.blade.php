@@ -73,15 +73,18 @@
                                             </span>
                                         </td>
                                         <td>
-                                            @if($grupo->materias && $grupo->materias->count() > 0)
-                                                @foreach($grupo->materias->take(3) as $materia)
+                                            @if($grupo->grupoMaterias && $grupo->grupoMaterias->count() > 0)
+                                                @php
+                                                    $materiasUnicas = $grupo->grupoMaterias->pluck('materia')->unique('sigla');
+                                                @endphp
+                                                @foreach($materiasUnicas->take(3) as $materia)
                                                     <span class="badge bg-info me-1 mb-1">
                                                         {{ $materia->sigla }}
                                                     </span>
                                                 @endforeach
-                                                @if($grupo->materias->count() > 3)
+                                                @if($materiasUnicas->count() > 3)
                                                     <span class="badge bg-secondary">
-                                                        +{{ $grupo->materias->count() - 3 }} más
+                                                        +{{ $materiasUnicas->count() - 3 }} más
                                                     </span>
                                                 @endif
                                             @else
@@ -91,15 +94,18 @@
                                             @endif
                                         </td>
                                         <td>
-                                            @if($grupo->docentes && $grupo->docentes->count() > 0)
-                                                @foreach($grupo->docentes->take(2) as $docente)
+                                            @if($grupo->grupoMaterias && $grupo->grupoMaterias->count() > 0)
+                                                @php
+                                                    $docentesUnicos = $grupo->grupoMaterias->pluck('docente')->filter()->unique('id');
+                                                @endphp
+                                                @foreach($docentesUnicos->take(2) as $docente)
                                                     <span class="badge bg-success me-1 mb-1" title="{{ $docente->nombre }}">
                                                         <i class="fas fa-chalkboard-teacher me-1"></i>{{ $docente->nombre }}
                                                     </span>
                                                 @endforeach
-                                                @if($grupo->docentes->count() > 2)
+                                                @if($docentesUnicos->count() > 2)
                                                     <span class="badge bg-secondary">
-                                                        +{{ $grupo->docentes->count() - 2 }} más
+                                                        +{{ $docentesUnicos->count() - 2 }} más
                                                     </span>
                                                 @endif
                                             @else

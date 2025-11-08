@@ -74,9 +74,6 @@
                                             <option value="{{ $grupo->id }}" 
                                                 {{ $grupoSeleccionado && $grupoSeleccionado->id == $grupo->id ? 'selected' : '' }}>
                                                 Grupo {{ $grupo->sigla }}
-                                                @if($grupo->materias->count() > 0)
-                                                    ({{ $grupo->materias->count() }} materias)
-                                                @endif
                                             </option>
                                         @endforeach
                                     </select>
@@ -183,13 +180,23 @@
                                                             </strong>
                                                         </td>
                                                         <td>
-                                                            @if($grupoSeleccionado && $grupoSeleccionado->docentes->count() > 0)
-                                                                @foreach($grupoSeleccionado->docentes as $docente)
-                                                                    <div>
-                                                                        <i class="fas fa-user-tie text-primary me-1"></i>
-                                                                        <small>{{ $docente->nombre }}</small>
-                                                                    </div>
-                                                                @endforeach
+                                                            @php
+                                                                // Obtener docente de grupo_materia
+                                                                $materia = $horario->materias->first();
+                                                                $docenteHorario = null;
+                                                                if ($materia && $grupoSeleccionado) {
+                                                                    $gm = \App\Models\GrupoMateria::where('id_grupo', $grupoSeleccionado->id)
+                                                                        ->where('sigla_materia', $materia->sigla)
+                                                                        ->first();
+                                                                    $docenteHorario = $gm ? $gm->docente : null;
+                                                                }
+                                                            @endphp
+                                                            
+                                                            @if($docenteHorario)
+                                                                <div>
+                                                                    <i class="fas fa-user-tie text-primary me-1"></i>
+                                                                    <small>{{ $docenteHorario->nombre }}</small>
+                                                                </div>
                                                             @else
                                                                 <span class="text-muted">Sin docente</span>
                                                             @endif
@@ -240,11 +247,22 @@
                                                         @endphp
                                                         @if($tieneDia && $hora >= $horaIni && $hora < $horaFi)
                                                             @if($hora == $horaIni)
+                                                                @php
+                                                                    // Obtener docente de grupo_materia
+                                                                    $materia = $horario->materias->first();
+                                                                    $docenteHorario = null;
+                                                                    if ($materia && $grupoSeleccionado) {
+                                                                        $gm = \App\Models\GrupoMateria::where('id_grupo', $grupoSeleccionado->id)
+                                                                            ->where('sigla_materia', $materia->sigla)
+                                                                            ->first();
+                                                                        $docenteHorario = $gm ? $gm->docente : null;
+                                                                    }
+                                                                @endphp
                                                                 <div class="schedule-item">
-                                                                    <div><strong>{{ $horario->materias->first()->sigla ?? '' }}</strong></div>
+                                                                    <div><strong>{{ $materia->sigla ?? '' }}</strong></div>
                                                                     <div class="small">{{ $horario->aula->nroaula ?? '' }}</div>
-                                                                    @if($grupoSeleccionado && $grupoSeleccionado->docentes->first())
-                                                                        <div class="small">{{ $grupoSeleccionado->docentes->first()->nombre }}</div>
+                                                                    @if($docenteHorario)
+                                                                        <div class="small">{{ $docenteHorario->nombre }}</div>
                                                                     @endif
                                                                     <div class="small">
                                                                         {{ \Carbon\Carbon::parse($horario->horaini)->format('H:i') }} - 

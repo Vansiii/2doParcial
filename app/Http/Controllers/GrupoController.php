@@ -16,7 +16,7 @@ class GrupoController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Grupo::with(['materias', 'docentes']);
+        $query = Grupo::with(['grupoMaterias.docente', 'grupoMaterias.materia']);
 
         // Filtros de búsqueda
         if ($request->filled('sigla')) {
@@ -24,8 +24,8 @@ class GrupoController extends Controller
         }
 
         if ($request->filled('sigla_materia')) {
-            $query->whereHas('materias', function($q) use ($request) {
-                $q->where('sigla', 'ILIKE', '%' . $request->sigla_materia . '%');
+            $query->whereHas('grupoMaterias', function($q) use ($request) {
+                $q->where('sigla_materia', 'ILIKE', '%' . $request->sigla_materia . '%');
             });
         }
 
@@ -71,10 +71,8 @@ class GrupoController extends Controller
                 'sigla' => strtoupper($request->sigla),
             ]);
 
-            // Asignar materias si se seleccionaron
-            if ($request->has('materias') && is_array($request->materias)) {
-                $grupo->materias()->sync($request->materias);
-            }
+            // NOTA: No asignamos materias aquí porque grupo_materia requiere id_docente
+            // Las materias se asignan junto con docentes en "Gestionar Docentes"
 
             Bitacora::registrar(
                 'Registro de grupo',
@@ -83,8 +81,8 @@ class GrupoController extends Controller
                 auth()->id()
             );
 
-            return redirect()->route('grupos.index')
-                ->with('success', 'Grupo registrado correctamente');
+            return redirect()->route('grupos.asignar-docentes', $grupo->sigla)
+                ->with('success', 'Grupo registrado correctamente. Ahora asigne materias y docentes.');
         } catch (\Exception $e) {
             Bitacora::registrar(
                 'Error al registrar grupo',
@@ -103,7 +101,7 @@ class GrupoController extends Controller
      */
     public function show($sigla)
     {
-        $grupo = Grupo::with(['materias', 'horarios', 'docentes'])->where('sigla', $sigla)->firstOrFail();
+        $grupo = Grupo::with(['horarios', 'grupoMaterias.docente', 'grupoMaterias.materia'])->where('sigla', $sigla)->firstOrFail();
 
         Bitacora::registrar(
             'Consulta de grupo',
@@ -120,7 +118,7 @@ class GrupoController extends Controller
      */
     public function edit($sigla)
     {
-        $grupo = Grupo::with(['materias', 'docentes'])->where('sigla', $sigla)->firstOrFail();
+        $grupo = Grupo::with(['grupoMaterias.materia'])->where('sigla', $sigla)->firstOrFail();
         $materias = Materia::orderBy('sigla')->get();
         return view('grupos.edit', compact('grupo', 'materias'));
     }
@@ -138,31 +136,32 @@ class GrupoController extends Controller
         ]);
 
         try {
-            // Actualizar materias
-            if ($request->has('materias') && is_array($request->materias)) {
-                $grupo->materias()->sync($request->materias);
-            } else {
-                $grupo->materias()->detach();
-            }
-
+            // IMPORTANTE: Como grupo_materia requiere id_docente (NOT NULL),
+            // no podemos simplemente sincronizar materias aquí.
+            // Las materias se asignan junto con los docentes en "Gestionar Docentes"
+            
+            // No hay nada que actualizar en este método excepto validar
+            // que el grupo existe (ya lo hicimos arriba)
+            
             Bitacora::registrar(
-                'Actualización de grupo',
+                'Consulta de grupo para edición',
                 true,
-                'Se actualizó el grupo: ' . $grupo->sigla,
+                'Usuario accedió a editar grupo: ' . $grupo->sigla,
                 auth()->id()
             );
 
-            return redirect()->route('grupos.index')
-                ->with('success', 'Grupo actualizado correctamente');
+            // Redirigir a gestionar docentes donde se hace la asignación real
+            return redirect()->route('grupos.asignar-docentes', $grupo->sigla)
+                ->with('info', 'Para asignar materias al grupo, debe asignarlas junto con un docente');
         } catch (\Exception $e) {
             Bitacora::registrar(
-                'Error al actualizar grupo',
+                'Error al procesar grupo',
                 false,
                 'Error: ' . $e->getMessage(),
                 auth()->id()
             );
 
-            return back()->withErrors(['error' => 'Error al actualizar el grupo'])
+            return back()->withErrors(['error' => 'Error al procesar el grupo: ' . $e->getMessage()])
                 ->withInput();
         }
     }
@@ -199,11 +198,13 @@ class GrupoController extends Controller
     }
 
     /**
-     * Mostrar formulario para asignar docentes a un grupo
+     * Mostrar formulario para asignar docentes a grupo-materia
      */
     public function asignarDocentes($sigla)
     {
-        $grupo = Grupo::with(['materias', 'docentes'])->where('sigla', $sigla)->firstOrFail();
+        $grupo = Grupo::with(['grupoMaterias.docente', 'grupoMaterias.materia'])
+            ->where('sigla', $sigla)
+            ->firstOrFail();
         
         // Obtener todos los usuarios con rol de Docente
         $docentes = Usuario::whereHas('roles', function($query) {
@@ -214,48 +215,98 @@ class GrupoController extends Controller
     }
 
     /**
-     * Guardar la asignación de docentes a un grupo
+     * Guardar la asignación de docente a grupo-materia
      */
     public function guardarDocentes(Request $request, $sigla)
     {
         $grupo = Grupo::where('sigla', $sigla)->firstOrFail();
 
         $request->validate([
-            'docentes' => 'nullable|array',
-            'docentes.*' => 'exists:usuario,id',
+            'sigla_materia' => 'required|exists:materia,sigla',
+            'id_docente' => 'required|exists:usuario,id',
         ], [
-            'docentes.*.exists' => 'Uno o más docentes seleccionados no son válidos',
+            'sigla_materia.required' => 'Debe seleccionar una materia',
+            'id_docente.required' => 'Debe seleccionar un docente',
         ]);
 
         try {
-            // Sincronizar docentes (elimina los que no están y añade los nuevos)
-            if ($request->has('docentes') && is_array($request->docentes)) {
-                $grupo->docentes()->sync($request->docentes);
-                $mensaje = 'Docentes asignados correctamente al grupo ' . $grupo->sigla;
+            // Verificar si ya existe la asignación grupo-materia
+            $existente = \App\Models\GrupoMateria::where('id_grupo', $grupo->id)
+                ->where('sigla_materia', $request->sigla_materia)
+                ->first();
+
+            if ($existente) {
+                // Actualizar el docente existente
+                $existente->id_docente = $request->id_docente;
+                $existente->save();
+                $mensaje = 'Materia-Docente actualizado correctamente para el grupo ' . $grupo->sigla;
             } else {
-                $grupo->docentes()->detach();
-                $mensaje = 'Se eliminaron todos los docentes del grupo ' . $grupo->sigla;
+                // Crear nueva asignación (esto asigna la materia al grupo junto con el docente)
+                \App\Models\GrupoMateria::create([
+                    'id_grupo' => $grupo->id,
+                    'sigla_materia' => $request->sigla_materia,
+                    'id_docente' => $request->id_docente,
+                ]);
+                $mensaje = 'Materia y Docente asignados correctamente al grupo ' . $grupo->sigla;
             }
 
             Bitacora::registrar(
-                'Asignación de docentes a grupo',
+                'Asignación de docente a grupo-materia',
                 true,
-                $mensaje,
+                "Grupo {$grupo->sigla} - Materia {$request->sigla_materia} - Docente ID {$request->id_docente}",
                 auth()->id()
             );
 
-            return redirect()->route('grupos.show', $grupo->sigla)
+            return redirect()->route('grupos.asignar-docentes', $grupo->sigla)
                 ->with('success', $mensaje);
         } catch (\Exception $e) {
             Bitacora::registrar(
-                'Error al asignar docentes',
+                'Error al asignar docente',
                 false,
                 'Error: ' . $e->getMessage(),
                 auth()->id()
             );
 
-            return back()->withErrors(['error' => 'Error al asignar docentes'])
+            return back()->withErrors(['error' => 'Error al asignar docente: ' . $e->getMessage()])
                 ->withInput();
+        }
+    }
+
+    /**
+     * Eliminar asignación de docente a grupo-materia
+     */
+    public function eliminarDocente($sigla, $siglaMateria)
+    {
+        $grupo = Grupo::where('sigla', $sigla)->firstOrFail();
+
+        try {
+            $eliminados = \App\Models\GrupoMateria::where('id_grupo', $grupo->id)
+                ->where('sigla_materia', $siglaMateria)
+                ->delete();
+
+            if ($eliminados > 0) {
+                Bitacora::registrar(
+                    'Eliminación de docente de grupo-materia',
+                    true,
+                    "Grupo {$grupo->sigla} - Materia {$siglaMateria}",
+                    auth()->id()
+                );
+
+                return redirect()->route('grupos.asignar-docentes', $grupo->sigla)
+                    ->with('success', 'Docente eliminado correctamente');
+            } else {
+                return redirect()->route('grupos.asignar-docentes', $grupo->sigla)
+                    ->with('info', 'No se encontró la asignación a eliminar');
+            }
+        } catch (\Exception $e) {
+            Bitacora::registrar(
+                'Error al eliminar docente',
+                false,
+                'Error: ' . $e->getMessage(),
+                auth()->id()
+            );
+
+            return back()->withErrors(['error' => 'Error al eliminar docente']);
         }
     }
 }

@@ -26,19 +26,36 @@ class Grupo extends Model
     }
 
     /**
-     * Relación con Materias
+     * Relación con GrupoMateria
      */
-    public function materias()
+    public function grupoMaterias()
     {
-        return $this->belongsToMany(Materia::class, 'grupo_materia', 'id_grupo', 'sigla_materia');
+        return $this->hasMany(GrupoMateria::class, 'id_grupo', 'id');
     }
 
     /**
-     * Relación con Docentes (Usuarios)
+     * Obtener materias del grupo a través de GrupoMateria
+     * NOTA: No usamos belongsToMany porque grupo_materia requiere id_docente (NOT NULL)
      */
-    public function docentes()
+    public function getMaterialesAttribute()
     {
-        return $this->belongsToMany(Usuario::class, 'grupo_usuario', 'id_grupo', 'id_usuario');
+        return Materia::whereIn('sigla', function($query) {
+            $query->select('sigla_materia')
+                ->from('grupo_materia')
+                ->where('id_grupo', $this->id);
+        })->get();
+    }
+
+    /**
+     * Obtener docente para una materia específica
+     */
+    public function getDocenteParaMateria($siglaMateria)
+    {
+        $grupoMateria = GrupoMateria::where('id_grupo', $this->id)
+            ->where('sigla_materia', $siglaMateria)
+            ->first();
+        
+        return $grupoMateria ? $grupoMateria->docente : null;
     }
 
     /**

@@ -68,23 +68,48 @@ class Usuario extends Authenticatable
     }
 
     /**
-     * Relación con Grupos (como docente)
+     * Relación con GrupoMateria (como docente)
      */
-    public function grupos()
+    public function grupoMaterias()
     {
-        return $this->belongsToMany(Grupo::class, 'grupo_usuario', 'id_usuario', 'id_grupo');
+        return $this->hasMany(GrupoMateria::class, 'id_docente', 'id');
     }
 
     /**
-     * Obtener horarios del docente a través de sus grupos asignados
+     * Obtener materias que dicta el docente
+     */
+    public function materiasQueDicta()
+    {
+        return $this->belongsToMany(Materia::class, 'grupo_materia', 'id_docente', 'sigla_materia')
+            ->withPivot('id_grupo');
+    }
+
+    /**
+     * Obtener grupos donde es docente
+     */
+    public function gruposQueDicta()
+    {
+        return $this->belongsToMany(Grupo::class, 'grupo_materia', 'id_docente', 'id_grupo')
+            ->withPivot('sigla_materia');
+    }
+
+    /**
+     * Obtener horarios del docente a través de grupo_materia
      */
     public function horarios()
     {
-        return Horario::whereIn('id_grupo', function($query) {
-            $query->select('id_grupo')
-                ->from('grupo_usuario')
-                ->where('id_usuario', $this->id);
-        });
+        return Horario::whereHas('materias', function($query) {
+                $query->whereIn('sigla', function($subQuery) {
+                    $subQuery->select('sigla_materia')
+                        ->from('grupo_materia')
+                        ->where('id_docente', $this->id);
+                });
+            })
+            ->whereIn('id_grupo', function($query) {
+                $query->select('id_grupo')
+                    ->from('grupo_materia')
+                    ->where('id_docente', $this->id);
+            });
     }
 
     /**

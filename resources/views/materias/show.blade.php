@@ -65,40 +65,37 @@
         </div>
 
         <div class="col-lg-4">
-            <!-- Docentes asignados -->
+            <!-- Docentes asignados por Grupo -->
             <div class="card shadow-sm mb-3">
                 <div class="card-header bg-secondary text-white">
                     <h6 class="mb-0">
-                        <i class="fas fa-chalkboard-teacher me-2"></i>Docentes Asignados
+                        <i class="fas fa-chalkboard-teacher me-2"></i>Docentes por Grupo
                     </h6>
                 </div>
                 <div class="card-body">
                     @php
-                        // Obtener docentes únicos a través de los grupos
-                        $docentes = collect();
-                        foreach($materia->grupos as $grupo) {
-                            foreach($grupo->docentes as $docente) {
-                                if (!$docentes->contains('id', $docente->id)) {
-                                    $docentes->push($docente);
-                                }
-                            }
-                        }
+                        // Obtener asignaciones grupo-materia para esta materia
+                        $asignaciones = $materia->grupoMaterias;
                     @endphp
                     
-                    @if($docentes->count() > 0)
+                    @if($asignaciones && $asignaciones->count() > 0)
                         <ul class="list-group list-group-flush">
-                            @foreach($docentes as $docente)
+                            @foreach($asignaciones as $gm)
                                 <li class="list-group-item px-0">
-                                    <i class="fas fa-user-tie me-2 text-primary"></i>
-                                    {{ $docente->nombre }}
-                                    <br>
-                                    <small class="text-muted">
-                                        Grupos: 
-                                        @foreach($materia->grupos->where(function($g) use ($docente) {
-                                            return $g->docentes->contains('id', $docente->id);
-                                        }) as $grupo)
-                                            <span class="badge bg-success">{{ $grupo->sigla }}</span>
-                                        @endforeach
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <span class="badge bg-success mb-1">{{ $gm->grupo->sigla }}</span>
+                                            <br>
+                                            @if($gm->docente)
+                                                <i class="fas fa-user-tie me-1 text-primary"></i>
+                                                <small>{{ $gm->docente->nombre }}</small>
+                                            @else
+                                                <small class="text-muted">Sin docente</small>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </li>
+                            @endforeach
                                     </small>
                                 </li>
                             @endforeach

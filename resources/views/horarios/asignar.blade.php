@@ -287,13 +287,20 @@
                                                         @endforeach
                                                     </td>
                                                     <td>
-                                                        @if($horario->grupo && $horario->grupo->docentes->count() > 0)
-                                                            @foreach($horario->grupo->docentes->take(2) as $docente)
-                                                                <small class="d-block">{{ $docente->nombre }}</small>
-                                                            @endforeach
-                                                            @if($horario->grupo->docentes->count() > 2)
-                                                                <small class="text-muted">+{{ $horario->grupo->docentes->count() - 2 }} más</small>
-                                                            @endif
+                                                        @php
+                                                            // Obtener docente de grupo_materia
+                                                            $materia = $horario->materias->first();
+                                                            $docenteHorario = null;
+                                                            if ($materia && $horario->grupo) {
+                                                                $gm = \App\Models\GrupoMateria::where('id_grupo', $horario->grupo->id)
+                                                                    ->where('sigla_materia', $materia->sigla)
+                                                                    ->first();
+                                                                $docenteHorario = $gm ? $gm->docente : null;
+                                                            }
+                                                        @endphp
+                                                        
+                                                        @if($docenteHorario)
+                                                            <small class="d-block">{{ $docenteHorario->nombre }}</small>
                                                         @else
                                                             <span class="text-muted">Sin docente</span>
                                                         @endif
