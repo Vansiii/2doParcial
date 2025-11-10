@@ -57,7 +57,7 @@
                                     <tr>
                                         <th>Sigla</th>
                                         <th>Nombre</th>
-                                        <th>Semestre</th>
+                                        <th>Nivel</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -68,14 +68,7 @@
                                             </td>
                                             <td>{{ $materia->nombre }}</td>
                                             <td>
-                                                @if($materia->semestre)
-                                                    <span class="badge bg-secondary">
-                                                        {{ $materia->semestre->periodo }} - 
-                                                        {{ \Carbon\Carbon::parse($materia->semestre->fechaini)->format('Y') }}
-                                                    </span>
-                                                @else
-                                                    <span class="text-muted">-</span>
-                                                @endif
+                                                <span class="badge bg-secondary">Nivel {{ $materia->nivel }}</span>
                                             </td>
                                         </tr>
                                     @endforeach

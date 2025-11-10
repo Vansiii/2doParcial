@@ -251,18 +251,30 @@ class CargaMasivaMateriaController extends Controller
         foreach ($fila as $columna => $valor) {
             // Si no es una columna fija, asumimos que es un código de carrera
             if (!in_array($columna, $columnasExcluidas) && !empty($valor)) {
-                $valorNormalizado = strtoupper(trim($valor));
+                $valorNormalizado = strtoupper(trim((string)$valor));
                 
                 // Si tiene marcador (X, 1, SI, etc.), asignar carrera
                 if (in_array($valorNormalizado, ['X', '1', 'SI', 'TRUE', 'YES', 'S'])) {
                     // Buscar la carrera por código (la columna es el código)
+                    // Normalizar: convertir a mayúsculas y remover espacios
                     $codigoCarrera = strtoupper(trim($columna));
+                    
+                    // Intentar buscar la carrera exactamente como viene
                     $carrera = Carrera::find($codigoCarrera);
                     
+                    // Si no se encuentra, intentar con variaciones comunes
+                    if (!$carrera) {
+                        // Intentar sin guiones: 320-0 -> 3200
+                        $codigoSinGuion = str_replace('-', '', $codigoCarrera);
+                        $carrera = Carrera::find($codigoSinGuion);
+                    }
+                    
                     if ($carrera) {
-                        // Asignar materia a carrera
-                        $materia->carreras()->attach($carrera->cod);
-                        $carrerasAsignadas[] = $carrera->nombre;
+                        // Verificar que no esté ya asignada (evitar duplicados)
+                        if (!$materia->carreras()->where('cod_carrera', $carrera->cod)->exists()) {
+                            $materia->carreras()->attach($carrera->cod);
+                            $carrerasAsignadas[] = $carrera->nombre;
+                        }
                     }
                 }
             }
