@@ -76,7 +76,7 @@
                                     <p><strong>Columnas requeridas:</strong></p>
                                     <ul class="mb-3">
                                         <li><code>sigla</code> - Código de la materia (máx. 6 caracteres)</li>
-                                        <li><code>nombre</code> - Nombre completo (máx. 50 caracteres)</li>
+                                        <li><code>nombre</code> - Nombre completo (máx. 100 caracteres)</li>
                                         <li><code>nivel</code> - Nivel de la materia (número 1-10)</li>
                                     </ul>
                                     <p><strong>Columnas opcionales:</strong></p>

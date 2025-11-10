@@ -183,10 +183,10 @@ class CargaMasivaMateriaController extends Controller
         }
 
         // Validar formato de nombre
-        if (strlen($fila['nombre']) > 50) {
+        if (strlen($fila['nombre']) > 100) {
             return [
                 'valido' => false,
-                'error' => "El nombre no puede exceder 50 caracteres"
+                'error' => "El nombre no puede exceder 100 caracteres"
             ];
         }
 
@@ -208,9 +208,15 @@ class CargaMasivaMateriaController extends Controller
     {
         $fila = array_change_key_case($fila, CASE_LOWER);
 
+        // Truncar y normalizar nombre
+        $nombre = trim($fila['nombre']);
+        if (strlen($nombre) > 100) {
+            $nombre = substr($nombre, 0, 100);
+        }
+
         return [
             'sigla' => strtoupper(trim($fila['sigla'])),
-            'nombre' => ucwords(strtolower(trim($fila['nombre']))),
+            'nombre' => ucwords(strtolower($nombre)),
             'nivel' => (int) $fila['nivel'],
         ];
     }
