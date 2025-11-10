@@ -1,0 +1,11 @@
+# Configuración de Nixpacks para Railway
+# Asegura que todas las extensiones PHP necesarias estén instaladas
+
+[phases.setup]
+nixPkgs = ['php82', 'php82Extensions.zip', 'php82Extensions.gd', 'php82Extensions.intl']
+
+[phases.install]
+cmds = ['composer install --no-dev --optimize-autoloader']
+
+[start]
+cmd = 'php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan serve --host=0.0.0.0 --port=${PORT:-8000}'
