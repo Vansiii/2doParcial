@@ -26,17 +26,22 @@
             <div class="card-body">
                 <form method="GET" action="{{ route('docentes.index') }}">
                     <div class="row">
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
+                            <label for="ci" class="form-label">CI</label>
+                            <input type="number" class="form-control" id="ci" name="ci" 
+                                   value="{{ request('ci') }}" placeholder="Buscar por CI">
+                        </div>
+                        <div class="col-md-3 mb-3">
                             <label for="nombre" class="form-label">Nombre</label>
                             <input type="text" class="form-control" id="nombre" name="nombre" 
                                    value="{{ request('nombre') }}" placeholder="Buscar por nombre">
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
                             <label for="correo" class="form-label">Correo</label>
                             <input type="text" class="form-control" id="correo" name="correo" 
                                    value="{{ request('correo') }}" placeholder="Buscar por correo">
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
                             <label for="telefono" class="form-label">Teléfono</label>
                             <input type="text" class="form-control" id="telefono" name="telefono" 
                                    value="{{ request('telefono') }}" placeholder="Buscar por teléfono">
@@ -76,6 +81,7 @@
                         <table class="table table-hover">
                             <thead class="table-light">
                                 <tr>
+                                    <th>CI</th>
                                     <th>ID</th>
                                     <th>Nombre</th>
                                     <th>Correo</th>
@@ -87,6 +93,11 @@
                             <tbody>
                                 @foreach($docentes as $docente)
                                 <tr>
+                                    <td>
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-id-badge"></i> {{ $docente->ci }}
+                                        </span>
+                                    </td>
                                     <td>{{ $docente->id }}</td>
                                     <td>
                                         <i class="fas fa-user"></i> {{ $docente->nombre }}

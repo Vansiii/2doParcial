@@ -75,15 +75,14 @@ class CargaMasivaController extends Controller
                     // Preparar datos del usuario
                     $datosUsuario = $this->prepararDatosUsuario($fila);
                     
-                    // Verificar si el usuario ya existe (por CI, código o correo)
+                    // Verificar si el usuario ya existe (por CI o correo)
                     $usuarioExistente = Usuario::where('ci', $datosUsuario['ci'])
-                        ->orWhere('codigo', $datosUsuario['codigo'])
                         ->orWhere('correo', $datosUsuario['correo'])
                         ->first();
 
                     if ($usuarioExistente) {
                         $resultados['fallidos']++;
-                        $resultados['errores'][] = "Fila {$numeroFila}: Usuario con CI {$datosUsuario['ci']}, código {$datosUsuario['codigo']} o correo {$datosUsuario['correo']} ya existe";
+                        $resultados['errores'][] = "Fila {$numeroFila}: Usuario con CI {$datosUsuario['ci']} o correo {$datosUsuario['correo']} ya existe";
                         continue;
                     }
 
@@ -220,11 +219,6 @@ class CargaMasivaController extends Controller
     private function prepararDatosUsuario($fila)
     {
         $fila = array_change_key_case($fila, CASE_LOWER);
-        
-        // Generar código único (puede ser el CI o un número aleatorio)
-        $codigo = isset($fila['codigo']) && !empty($fila['codigo']) 
-            ? $fila['codigo'] 
-            : $fila['ci'];
 
         // Contraseña: usar la proporcionada o el CI por defecto
         $password = isset($fila['password']) && !empty($fila['password'])
@@ -236,8 +230,8 @@ class CargaMasivaController extends Controller
             'nombre' => strtoupper(trim($fila['nombre'])),
             'correo' => strtolower(trim($fila['correo'])),
             'telefono' => (int) $fila['telefono'],
-            'codigo' => (int) $codigo,
             'passw' => Hash::make($password),
+            // NOTA: 'codigo' se genera automáticamente por la base de datos
         ];
     }
 

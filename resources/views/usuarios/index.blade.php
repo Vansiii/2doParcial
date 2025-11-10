@@ -38,12 +38,17 @@
                         <div class="card-body">
                             <form action="{{ route('usuarios.index') }}" method="GET">
                                 <div class="row g-3">
-                                    <div class="col-md-3">
+                                    <div class="col-md-2">
+                                        <label for="ci" class="form-label">CI</label>
+                                        <input type="number" class="form-control" id="ci" name="ci" 
+                                               value="{{ request('ci') }}" placeholder="Ej: 1234567">
+                                    </div>
+                                    <div class="col-md-2">
                                         <label for="codigo" class="form-label">Código</label>
                                         <input type="number" class="form-control" id="codigo" name="codigo" 
                                                value="{{ request('codigo') }}" placeholder="Ej: 123456">
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <label for="nombre" class="form-label">Nombre</label>
                                         <input type="text" class="form-control" id="nombre" name="nombre" 
                                                value="{{ request('nombre') }}" placeholder="Ej: Juan">
@@ -79,6 +84,7 @@
                             <table class="table table-hover align-middle">
                                 <thead class="table-light">
                                     <tr>
+                                        <th><i class="fas fa-id-badge me-1"></i>CI</th>
                                         <th><i class="fas fa-id-card me-1"></i>Código</th>
                                         <th><i class="fas fa-user me-1"></i>Nombre</th>
                                         <th><i class="fas fa-envelope me-1"></i>Correo</th>
@@ -90,6 +96,11 @@
                                 <tbody>
                                     @foreach($usuarios as $usuario)
                                         <tr>
+                                            <td>
+                                                <span class="badge bg-secondary">
+                                                    {{ $usuario->ci }}
+                                                </span>
+                                            </td>
                                             <td>
                                                 <span class="badge bg-primary fs-6">
                                                     {{ $usuario->codigo }}

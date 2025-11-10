@@ -20,6 +20,10 @@ class UsuarioController extends Controller
         $query = Usuario::with(['roles']);
 
         // Filtros de búsqueda
+        if ($request->filled('ci')) {
+            $query->where('ci', 'LIKE', '%' . $request->ci . '%');
+        }
+
         if ($request->filled('codigo')) {
             $query->where('codigo', 'LIKE', '%' . $request->codigo . '%');
         }
@@ -34,7 +38,7 @@ class UsuarioController extends Controller
             });
         }
 
-        $usuarios = $query->orderBy('nombre')->paginate(15);
+        $usuarios = $query->orderBy('nombre')->paginate(15)->appends($request->query());
         $roles = Rol::orderBy('descripcion')->get();
 
         Bitacora::registrar(

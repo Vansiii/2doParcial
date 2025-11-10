@@ -129,6 +129,7 @@
                                     <i class="fas fa-exclamation-triangle me-2"></i>
                                     <strong>Importante:</strong>
                                     <ul class="mb-0 mt-2">
+                                        <li><strong>El CÓDIGO se genera automáticamente</strong> - No es necesario incluirlo en el archivo</li>
                                         <li>La contraseña predeterminada será el número de CI de cada usuario</li>
                                         <li>Los usuarios duplicados (mismo CI o correo) serán omitidos</li>
                                         <li>Al menos un rol debe estar marcado para cada usuario</li>

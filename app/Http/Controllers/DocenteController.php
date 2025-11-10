@@ -22,6 +22,10 @@ class DocenteController extends Controller
         })->with('roles');
 
         // Filtros de búsqueda
+        if ($request->filled('ci')) {
+            $query->where('ci', 'LIKE', '%' . $request->ci . '%');
+        }
+
         if ($request->filled('nombre')) {
             $query->where('nombre', 'ILIKE', '%' . $request->nombre . '%');
         }
@@ -34,7 +38,7 @@ class DocenteController extends Controller
             $query->where('telefono', 'LIKE', '%' . $request->telefono . '%');
         }
 
-        $docentes = $query->orderBy('nombre')->paginate(10);
+        $docentes = $query->orderBy('nombre')->paginate(10)->appends($request->query());
 
         Bitacora::registrar(
             'Consulta de docentes',
