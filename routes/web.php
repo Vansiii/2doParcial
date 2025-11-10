@@ -13,6 +13,8 @@ use App\Http\Controllers\ModuloController;
 use App\Http\Controllers\CarreraController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\AsistenciaController;
+use App\Http\Controllers\JustificacionController;
+use App\Http\Controllers\ReporteController;
 
 // Ruta principal - redirigir a login
 Route::get('/', function () {
@@ -94,5 +96,35 @@ Route::middleware('auth')->group(function () {
     // Consultar asistencias de todos los docentes (Administrador, Autoridad, Coordinador)
     Route::middleware('role:Administrador,Autoridad,Coordinador')->group(function () {
         Route::get('asistencias', [AsistenciaController::class, 'index'])->name('asistencias.index');
+    });
+
+    // CU16: Gestionar Justificaciones
+    // Rutas para Docentes
+    Route::middleware('role:Docente')->group(function () {
+        Route::get('justificaciones/mis-justificaciones', [JustificacionController::class, 'misJustificaciones'])->name('justificaciones.mis-justificaciones');
+        Route::get('justificaciones/create', [JustificacionController::class, 'create'])->name('justificaciones.create');
+        Route::post('justificaciones', [JustificacionController::class, 'store'])->name('justificaciones.store');
+    });
+
+    // Rutas compartidas (Docentes y Administradores)
+    Route::middleware('role:Docente,Administrador,Autoridad,Coordinador')->group(function () {
+        Route::get('justificaciones/{id}', [JustificacionController::class, 'show'])->name('justificaciones.show');
+        Route::get('justificaciones/{id}/descargar', [JustificacionController::class, 'descargarArchivo'])->name('justificaciones.descargar');
+    });
+
+    // Rutas para Administrador, Autoridad, Coordinador
+    Route::middleware('role:Administrador,Autoridad,Coordinador')->group(function () {
+        Route::get('justificaciones', [JustificacionController::class, 'index'])->name('justificaciones.index');
+        Route::patch('justificaciones/{id}/aprobar', [JustificacionController::class, 'aprobar'])->name('justificaciones.aprobar');
+        Route::patch('justificaciones/{id}/rechazar', [JustificacionController::class, 'rechazar'])->name('justificaciones.rechazar');
+    });
+
+    // CU17: Generar y Exportar Reportes (Administrador, Autoridad, Coordinador)
+    Route::middleware('role:Administrador,Autoridad,Coordinador')->group(function () {
+        Route::get('reportes', [ReporteController::class, 'index'])->name('reportes.index');
+        Route::post('reportes/horarios-semanal', [ReporteController::class, 'horariosSemanal'])->name('reportes.horarios-semanal');
+        Route::post('reportes/carga-horaria', [ReporteController::class, 'cargaHoraria'])->name('reportes.carga-horaria');
+        Route::post('reportes/asistencia', [ReporteController::class, 'asistencia'])->name('reportes.asistencia');
+        Route::post('reportes/aulas-disponibles', [ReporteController::class, 'aulasDisponibles'])->name('reportes.aulas-disponibles');
     });
 });

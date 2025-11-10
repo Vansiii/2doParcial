@@ -206,6 +206,36 @@
                     <i class="fas fa-clipboard-list"></i> Consultar Asistencias
                 </a>
                 @endif
+
+                <!-- Sección de Justificaciones -->
+                <div class="mt-3">
+                    <small class="text-white-50 px-3">GESTIONAR JUSTIFICACIONES</small>
+                </div>
+
+                @if(auth()->user()->hasRole('Docente'))
+                <a class="nav-link {{ request()->routeIs('justificaciones.create') ? 'active' : '' }}" href="{{ route('justificaciones.create') }}">
+                    <i class="fas fa-file-medical"></i> Nueva Justificación
+                </a>
+                <a class="nav-link {{ request()->routeIs('justificaciones.mis-justificaciones') ? 'active' : '' }}" href="{{ route('justificaciones.mis-justificaciones') }}">
+                    <i class="fas fa-list-alt"></i> Mis Justificaciones
+                </a>
+                @endif
+
+                @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Autoridad') || auth()->user()->hasRole('Coordinador'))
+                <a class="nav-link {{ request()->routeIs('justificaciones.index') ? 'active' : '' }}" href="{{ route('justificaciones.index') }}">
+                    <i class="fas fa-clipboard-list"></i> Revisar Justificaciones
+                </a>
+                @endif
+
+                <!-- Sección de Reportes -->
+                @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Autoridad') || auth()->user()->hasRole('Coordinador'))
+                <div class="mt-3">
+                    <small class="text-white-50 px-3">REPORTES</small>
+                </div>
+                <a class="nav-link {{ request()->routeIs('reportes.index') ? 'active' : '' }}" href="{{ route('reportes.index') }}">
+                    <i class="fas fa-chart-bar"></i> Generar Reportes
+                </a>
+                @endif
                 
                 <!-- Configuración -->
                 <div class="mt-3">

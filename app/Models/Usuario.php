@@ -130,6 +130,25 @@ class Usuario extends Authenticatable
     }
 
     /**
+     * Verificar si el usuario tiene alguno de los roles especificados
+     */
+    public function hasAnyRole($roles)
+    {
+        // Si es un array, verificar si tiene alguno de esos roles
+        if (is_array($roles)) {
+            return $this->roles()->whereIn('descripcion', $roles)->exists();
+        }
+        
+        // Si es un string separado por comas, convertir a array
+        if (is_string($roles)) {
+            $rolesArray = array_map('trim', explode(',', $roles));
+            return $this->roles()->whereIn('descripcion', $rolesArray)->exists();
+        }
+        
+        return false;
+    }
+
+    /**
      * Verificar si el usuario tiene un permiso específico
      */
     public function hasPermission($permissionDescription)

@@ -9,6 +9,7 @@ use App\Models\Semestre;
 use App\Models\Modulo;
 use App\Models\Carrera;
 use App\Models\Usuario;
+use App\Models\Justificacion;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -29,6 +30,16 @@ class DashboardController extends Controller
                 'semestres' => Semestre::count(),
                 'modulos' => Modulo::count(),
                 'carreras' => Carrera::count(),
+                'justificaciones_pendientes' => Justificacion::where('estado', 'Pendiente')->count(),
+            ];
+        }
+        
+        // Estadísticas para docentes
+        if ($usuario->hasRole('Docente')) {
+            $stats = [
+                'mis_justificaciones' => Justificacion::where('id_usuario', $usuario->id)->count(),
+                'justificaciones_pendientes' => Justificacion::where('id_usuario', $usuario->id)->where('estado', 'Pendiente')->count(),
+                'justificaciones_aprobadas' => Justificacion::where('id_usuario', $usuario->id)->where('estado', 'Aprobada')->count(),
             ];
         }
         

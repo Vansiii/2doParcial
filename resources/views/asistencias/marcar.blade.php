@@ -7,7 +7,7 @@
             <div class="card shadow-sm">
                 <div class="card-header bg-success text-white">
                     <h5 class="mb-0">
-                        <i class="fas fa-clipboard-check me-2"></i>CU15: Marcar Asistencia
+                        <i class="fas fa-clipboard-check me-2"></i>Marcar Asistencia
                     </h5>
                 </div>
                 <div class="card-body">

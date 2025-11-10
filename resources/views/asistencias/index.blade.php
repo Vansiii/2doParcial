@@ -7,7 +7,7 @@
             <div class="card shadow-sm">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">
-                        <i class="fas fa-clipboard-list me-2"></i>CU15: Consultar Asistencias de Docentes
+                        <i class="fas fa-clipboard-list me-2"></i>Consultar Asistencias de Docentes
                     </h5>
                 </div>
                 <div class="card-body">

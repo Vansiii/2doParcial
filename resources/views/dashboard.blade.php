@@ -125,6 +125,76 @@
             </div>
         </div>
     </div>
+
+    <!-- Justificaciones Pendientes (Admin) -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Justificaciones Pendientes</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['justificaciones_pendientes'] ?? 0 }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-clock fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
+<!-- Estadísticas para Docentes -->
+@if($usuario->hasRole('Docente'))
+<div class="row">
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Mis Justificaciones</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['mis_justificaciones'] ?? 0 }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-list-alt fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Pendientes</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['justificaciones_pendientes'] ?? 0 }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-clock fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Aprobadas</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['justificaciones_aprobadas'] ?? 0 }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 @endif
 
@@ -181,12 +251,30 @@
                         <i class="fas fa-users"></i> Gestionar Grupos
                     </a>
                     @endif
+
+                    @if($usuario->hasRole('Administrador') || $usuario->hasRole('Autoridad') || $usuario->hasRole('Coordinador'))
+                    <a href="{{ route('justificaciones.index') }}" class="btn btn-outline-warning">
+                        <i class="fas fa-clipboard-list"></i> Revisar Justificaciones
+                    </a>
+                    <a href="{{ route('reportes.index') }}" class="btn btn-outline-info">
+                        <i class="fas fa-chart-bar"></i> Generar Reportes
+                    </a>
+                    @endif
+
+                    @if($usuario->hasRole('Docente'))
+                    <a href="{{ route('asistencias.marcar') }}" class="btn btn-outline-success">
+                        <i class="fas fa-clipboard-check"></i> Marcar Asistencia
+                    </a>
+                    <a href="{{ route('justificaciones.create') }}" class="btn btn-outline-warning">
+                        <i class="fas fa-file-medical"></i> Nueva Justificación
+                    </a>
+                    @endif
                     
                     <a href="{{ route('horarios.docente', auth()->id()) }}" class="btn btn-outline-secondary">
                         <i class="fas fa-calendar"></i> Ver Mi Horario
                     </a>
                     
-                    <a href="{{ route('change-password') }}" class="btn btn-outline-warning">
+                    <a href="{{ route('change-password') }}" class="btn btn-outline-info">
                         <i class="fas fa-key"></i> Cambiar Contraseña
                     </a>
                 </div>
