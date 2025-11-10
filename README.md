@@ -1,11 +1,83 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Sistema de Gestión Académica - 2do Parcial
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sistema de gestión académica desarrollado con Laravel 11 y PostgreSQL.
+
+## Requisitos
+
+- PHP 8.2 o superior
+- PostgreSQL 13 o superior
+- Composer
+- Node.js y NPM (para assets)
+
+## Instalación Local
+
+1. Clonar el repositorio
+2. Instalar dependencias:
+```bash
+composer install
+npm install
+```
+
+3. Configurar variables de entorno:
+```bash
+cp .env.example .env
+php artisan key:generate
+```
+
+4. Configurar base de datos en `.env`
+
+5. Ejecutar migraciones:
+```bash
+php artisan migrate
+```
+
+6. Asegurar directorios de almacenamiento:
+```bash
+php artisan storage:ensure
+```
+
+7. Compilar assets:
+```bash
+npm run build
+```
+
+8. Iniciar servidor:
+```bash
+php artisan serve
+```
+
+## Despliegue en Producción (Railway)
+
+Después de cada despliegue en Railway, ejecutar:
+
+```bash
+php artisan storage:ensure
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+```
+
+**Importante**: El comando `storage:ensure` crea los directorios necesarios para la carga masiva de archivos y otras funcionalidades.
+
+## Características Principales
+
+- **CU04-CU06**: Gestión de Docentes
+- **CU17**: Generación de Reportes
+- **CU18**: Gestión de Usuarios con Roles
+- **CU20**: Carga Masiva de Usuarios (Excel/CSV)
+- Sistema de autenticación
+- Gestión de períodos académicos
+- Control de horarios y grupos
+- Bitácora de actividades
+
+## Tecnologías Utilizadas
+
+- Laravel 11
+- PostgreSQL
+- Bootstrap 5
+- Font Awesome
+- FastExcel (carga masiva)
+- DomPDF (generación de reportes)
 
 ## About Laravel
 

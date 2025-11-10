@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Models\Usuario;
 use App\Models\Rol;
 use App\Models\Bitacora;
 use Illuminate\Http\Request;
@@ -37,8 +37,20 @@ class CargaMasivaController extends Controller
             $archivo = $request->file('archivo');
             $extension = $archivo->getClientOriginalExtension();
             
-            // Leer el archivo usando FastExcel
-            $registros = (new FastExcel)->import($archivo);
+            // Guardar el archivo temporalmente en storage/app/temp
+            $tempPath = storage_path('app/temp');
+            if (!file_exists($tempPath)) {
+                mkdir($tempPath, 0755, true);
+            }
+            
+            $tempFileName = 'import_' . time() . '_' . uniqid() . '.' . $extension;
+            $tempFilePath = $tempPath . '/' . $tempFileName;
+            
+            // Mover el archivo subido al directorio temporal
+            move_uploaded_file($archivo->getPathname(), $tempFilePath);
+            
+            // Leer el archivo usando FastExcel desde el storage local
+            $registros = (new FastExcel)->import($tempFilePath);
             
             $resultados = [
                 'exitosos' => 0,
@@ -64,7 +76,7 @@ class CargaMasivaController extends Controller
                     $datosUsuario = $this->prepararDatosUsuario($fila);
                     
                     // Verificar si el usuario ya existe (por CI, código o correo)
-                    $usuarioExistente = User::where('ci', $datosUsuario['ci'])
+                    $usuarioExistente = Usuario::where('ci', $datosUsuario['ci'])
                         ->orWhere('codigo', $datosUsuario['codigo'])
                         ->orWhere('correo', $datosUsuario['correo'])
                         ->first();
@@ -76,7 +88,7 @@ class CargaMasivaController extends Controller
                     }
 
                     // Crear usuario
-                    $usuario = User::create($datosUsuario);
+                    $usuario = Usuario::create($datosUsuario);
 
                     // Asignar roles
                     $rolesAsignados = $this->asignarRoles($usuario, $fila);
@@ -112,12 +124,22 @@ class CargaMasivaController extends Controller
                 $mensaje .= ", {$resultados['fallidos']} registros fallidos";
             }
 
+            // Limpiar archivo temporal
+            if (isset($tempFilePath) && file_exists($tempFilePath)) {
+                unlink($tempFilePath);
+            }
+
             return redirect()->route('carga-masiva.index')
                 ->with('success', $mensaje)
                 ->with('resultados', $resultados);
 
         } catch (\Exception $e) {
             DB::rollBack();
+            
+            // Limpiar archivo temporal en caso de error
+            if (isset($tempFilePath) && file_exists($tempFilePath)) {
+                unlink($tempFilePath);
+            }
             
             Bitacora::registrar(
                 'Error en carga masiva',
@@ -303,7 +325,24 @@ class CargaMasivaController extends Controller
             auth()->id()
         );
 
-        return (new FastExcel(collect($datos)))
-            ->download('plantilla_carga_usuarios.xlsx');
+        try {
+            // Crear directorio temporal si no existe
+            $tempPath = storage_path('app/temp');
+            if (!file_exists($tempPath)) {
+                mkdir($tempPath, 0755, true);
+            }
+            
+            // Generar archivo temporal
+            $tempFileName = 'plantilla_' . time() . '.xlsx';
+            $tempFilePath = $tempPath . '/' . $tempFileName;
+            
+            // Exportar a archivo temporal
+            (new FastExcel(collect($datos)))->export($tempFilePath);
+            
+            // Descargar y eliminar archivo temporal
+            return response()->download($tempFilePath, 'plantilla_carga_usuarios.xlsx')->deleteFileAfterSend(true);
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Error al generar la plantilla: ' . $e->getMessage()]);
+        }
     }
 }
