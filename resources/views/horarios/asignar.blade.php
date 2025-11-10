@@ -97,35 +97,16 @@
                                         @enderror
                                     </div>
 
-                                    <div class="col-md-2">
-                                        <label for="nroaula" class="form-label">
-                                            Aula <span class="text-danger">*</span>
-                                        </label>
-                                        <select class="form-select @error('nroaula') is-invalid @enderror" 
-                                                id="nroaula" 
-                                                name="nroaula" required>
-                                            <option value="">Seleccione</option>
-                                            @foreach($aulas as $aula)
-                                                <option value="{{ $aula->nroaula }}" 
-                                                    {{ old('nroaula') == $aula->nroaula ? 'selected' : '' }}>
-                                                    {{ $aula->nroaula }} (Cap: {{ $aula->capacidad }})
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                        @error('nroaula')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </div>
                                 </div>
 
                                 <div class="row g-3 mt-2">
                                     <div class="col-12">
                                         <label class="form-label">
-                                            Horarios por Día <span class="text-danger">*</span>
+                                            Horarios y Aulas por Día <span class="text-danger">*</span>
                                         </label>
                                         <div class="alert alert-info">
                                             <i class="fas fa-info-circle me-2"></i>
-                                            Seleccione los días y configure el horario específico para cada uno
+                                            Seleccione los días y configure el horario y aula específico para cada uno
                                         </div>
                                     </div>
                                 </div>
@@ -149,6 +130,22 @@
                                                     </div>
                                                     
                                                     <div id="fields_{{ $dia->id }}" style="display: {{ in_array($dia->id, old('dias_seleccionados', [])) ? 'block' : 'none' }};">
+                                                        <div class="mb-2">
+                                                            <label for="nroaula_{{ $dia->id }}" class="form-label small">
+                                                                <i class="fas fa-door-open me-1"></i>Aula
+                                                            </label>
+                                                            <select class="form-select form-select-sm" 
+                                                                    id="nroaula_{{ $dia->id }}" 
+                                                                    name="nroaula[{{ $dia->id }}]">
+                                                                <option value="">Seleccione</option>
+                                                                @foreach($aulas as $aula)
+                                                                    <option value="{{ $aula->nroaula }}" 
+                                                                        {{ old('nroaula.'.$dia->id) == $aula->nroaula ? 'selected' : '' }}>
+                                                                        {{ $aula->nroaula }} ({{ $aula->capacidad }})
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
                                                         <div class="mb-2">
                                                             <label for="horaini_{{ $dia->id }}" class="form-label small">
                                                                 <i class="fas fa-clock me-1"></i>Hora Inicio
@@ -335,17 +332,21 @@
 function toggleDiaFields(diaId) {
     const checkbox = document.getElementById('dia_check_' + diaId);
     const fields = document.getElementById('fields_' + diaId);
+    const nroaula = document.getElementById('nroaula_' + diaId);
     const horaini = document.getElementById('horaini_' + diaId);
     const horafin = document.getElementById('horafin_' + diaId);
     
     if (checkbox.checked) {
         fields.style.display = 'block';
+        nroaula.required = true;
         horaini.required = true;
         horafin.required = true;
     } else {
         fields.style.display = 'none';
+        nroaula.required = false;
         horaini.required = false;
         horafin.required = false;
+        nroaula.value = '';
         horaini.value = '';
         horafin.value = '';
     }
@@ -368,8 +369,15 @@ document.addEventListener('DOMContentLoaded', function() {
             let valid = true;
             checkboxes.forEach(function(checkbox) {
                 const diaId = checkbox.value;
+                const nroaula = document.getElementById('nroaula_' + diaId);
                 const horaini = document.getElementById('horaini_' + diaId);
                 const horafin = document.getElementById('horafin_' + diaId);
+                
+                if (!nroaula.value) {
+                    valid = false;
+                    alert('Debe seleccionar un aula para ' + checkbox.labels[0].textContent.trim());
+                    return false;
+                }
                 
                 if (!horaini.value || !horafin.value) {
                     valid = false;

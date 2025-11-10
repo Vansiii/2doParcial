@@ -61,11 +61,16 @@ class DocenteController extends Controller
     public function store(Request $request)
     {
         $request->validate([
+            'ci' => 'required|integer|unique:usuario,ci|min:1|max:99999999',
             'nombre' => 'required|string|max:40',
             'correo' => 'required|email|max:40|unique:usuario,correo',
             'telefono' => 'required|numeric|digits_between:8,15',
             'password' => 'required|min:6|confirmed',
         ], [
+            'ci.required' => 'El CI es obligatorio',
+            'ci.unique' => 'Este CI ya está registrado',
+            'ci.min' => 'El CI debe ser mayor a 0',
+            'ci.max' => 'El CI no puede ser mayor a 99999999',
             'nombre.required' => 'El nombre es obligatorio',
             'nombre.max' => 'El nombre no debe exceder 40 caracteres',
             'correo.required' => 'El correo es obligatorio',
@@ -83,8 +88,9 @@ class DocenteController extends Controller
         try {
             // Crear usuario
             $usuario = Usuario::create([
-                'nombre' => $request->nombre,
-                'correo' => $request->correo,
+                'ci' => $request->ci,
+                'nombre' => strtoupper($request->nombre),
+                'correo' => strtolower($request->correo),
                 'telefono' => $request->telefono,
                 'passw' => Hash::make($request->password),
             ]);
@@ -167,11 +173,16 @@ class DocenteController extends Controller
         })->findOrFail($id);
 
         $request->validate([
+            'ci' => 'required|integer|unique:usuario,ci,' . $id . '|min:1|max:99999999',
             'nombre' => 'required|string|max:40',
             'correo' => 'required|email|max:40|unique:usuario,correo,' . $id,
             'telefono' => 'required|numeric|digits_between:8,15',
             'password' => 'nullable|min:6|confirmed',
         ], [
+            'ci.required' => 'El CI es obligatorio',
+            'ci.unique' => 'Este CI ya está registrado',
+            'ci.min' => 'El CI debe ser mayor a 0',
+            'ci.max' => 'El CI no puede ser mayor a 99999999',
             'nombre.required' => 'El nombre es obligatorio',
             'correo.required' => 'El correo es obligatorio',
             'correo.unique' => 'Este correo ya está registrado',
@@ -181,8 +192,9 @@ class DocenteController extends Controller
         ]);
 
         try {
-            $docente->nombre = $request->nombre;
-            $docente->correo = $request->correo;
+            $docente->ci = $request->ci;
+            $docente->nombre = strtoupper($request->nombre);
+            $docente->correo = strtolower($request->correo);
             $docente->telefono = $request->telefono;
 
             if ($request->filled('password')) {

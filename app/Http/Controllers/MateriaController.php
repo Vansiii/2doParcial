@@ -15,7 +15,7 @@ class MateriaController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Materia::with('semestre');
+        $query = Materia::query();
 
         // Filtros de búsqueda
         if ($request->filled('sigla')) {
@@ -26,12 +26,14 @@ class MateriaController extends Controller
             $query->where('nombre', 'ILIKE', '%' . $request->nombre . '%');
         }
 
-        if ($request->filled('semestre')) {
-            $query->where('id_semestre', $request->semestre);
+        if ($request->filled('nivel')) {
+            $query->where('nivel', $request->nivel);
         }
 
         $materias = $query->orderBy('sigla')->paginate(10);
-        $semestres = Semestre::orderBy('fechaini', 'desc')->get();
+        
+        // Obtener niveles únicos para filtro
+        $niveles = Materia::distinct()->pluck('nivel')->sort();
 
         Bitacora::registrar(
             'Consulta de materias',
@@ -40,7 +42,7 @@ class MateriaController extends Controller
             auth()->id()
         );
 
-        return view('materias.index', compact('materias', 'semestres'));
+        return view('materias.index', compact('materias', 'niveles'));
     }
 
     /**
@@ -48,8 +50,7 @@ class MateriaController extends Controller
      */
     public function create()
     {
-        $semestres = Semestre::orderBy('fechaini', 'desc')->get();
-        return view('materias.create', compact('semestres'));
+        return view('materias.create');
     }
 
     /**
@@ -60,24 +61,25 @@ class MateriaController extends Controller
         $request->validate([
             'sigla' => 'required|string|max:6|unique:materia,sigla',
             'nombre' => 'required|string|max:30',
-            'id_semestre' => 'nullable|exists:semestre,id',
+            'nivel' => 'nullable|integer|min:0|max:10',
         ], [
             'sigla.required' => 'La sigla es obligatoria',
             'sigla.unique' => 'Esta sigla ya está registrada',
             'nombre.required' => 'El nombre es obligatorio',
+            'nivel.integer' => 'El nivel debe ser un número entero',
         ]);
 
         try {
             $materia = Materia::create([
                 'sigla' => strtoupper($request->sigla),
                 'nombre' => $request->nombre,
-                'id_semestre' => $request->id_semestre,
+                'nivel' => $request->nivel ?? 0,
             ]);
 
             Bitacora::registrar(
                 'Registro de materia',
                 true,
-                'Se registró la materia: ' . $materia->sigla . ' - ' . $materia->nombre,
+                'Se registró la materia: ' . $materia->sigla . ' - ' . $materia->nombre . ' (Nivel: ' . $materia->nivel . ')',
                 auth()->id()
             );
 
@@ -101,7 +103,7 @@ class MateriaController extends Controller
      */
     public function show($sigla)
     {
-        $materia = Materia::with(['semestre', 'grupos.docentes'])->findOrFail($sigla);
+        $materia = Materia::with(['periodos', 'grupos.docentes'])->findOrFail($sigla);
 
         Bitacora::registrar(
             'Consulta de materia',
@@ -119,8 +121,7 @@ class MateriaController extends Controller
     public function edit($sigla)
     {
         $materia = Materia::findOrFail($sigla);
-        $semestres = Semestre::orderBy('fechaini', 'desc')->get();
-        return view('materias.edit', compact('materia', 'semestres'));
+        return view('materias.edit', compact('materia'));
     }
 
     /**
@@ -132,20 +133,21 @@ class MateriaController extends Controller
 
         $request->validate([
             'nombre' => 'required|string|max:30',
-            'id_semestre' => 'nullable|exists:semestre,id',
+            'nivel' => 'nullable|integer|min:0|max:10',
         ], [
             'nombre.required' => 'El nombre es obligatorio',
+            'nivel.integer' => 'El nivel debe ser un número entero',
         ]);
 
         try {
             $materia->nombre = $request->nombre;
-            $materia->id_semestre = $request->id_semestre;
+            $materia->nivel = $request->nivel ?? 0;
             $materia->save();
 
             Bitacora::registrar(
                 'Actualización de materia',
                 true,
-                'Se actualizó la materia: ' . $materia->sigla,
+                'Se actualizó la materia: ' . $materia->sigla . ' (Nivel: ' . $materia->nivel . ')',
                 auth()->id()
             );
 

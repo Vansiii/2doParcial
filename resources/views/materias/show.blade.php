@@ -36,21 +36,33 @@
 
                     <div class="row mb-3">
                         <div class="col-md-4">
-                            <strong>Semestre:</strong>
+                            <strong>Nivel:</strong>
                         </div>
                         <div class="col-md-8">
-                            @if($materia->semestre)
-                                <span class="badge bg-info">
-                                    {{ \Carbon\Carbon::parse($materia->semestre->fechaini)->format('Y') }} - 
-                                    {{ $materia->semestre->periodo }}
-                                </span>
-                                <br>
-                                <small class="text-muted">
-                                    {{ \Carbon\Carbon::parse($materia->semestre->fechaini)->format('d/m/Y') }} - 
-                                    {{ \Carbon\Carbon::parse($materia->semestre->fechafin)->format('d/m/Y') }}
-                                </small>
+                            @if($materia->nivel > 0)
+                                <span class="badge bg-info">Nivel {{ $materia->nivel }}</span>
                             @else
-                                <span class="text-muted">Sin semestre asignado</span>
+                                <span class="text-muted">Sin nivel especificado</span>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <strong>Períodos Académicos:</strong>
+                        </div>
+                        <div class="col-md-8">
+                            @if($materia->periodos && $materia->periodos->count() > 0)
+                                @foreach($materia->periodos as $periodo)
+                                    <span class="badge bg-{{ $periodo->activo ? 'success' : 'secondary' }} me-1 mb-1">
+                                        {{ $periodo->abreviatura }}
+                                        @if($periodo->activo)
+                                            <i class="fas fa-check-circle ms-1"></i>
+                                        @endif
+                                    </span>
+                                @endforeach
+                            @else
+                                <span class="text-muted">No asignada a períodos</span>
                             @endif
                         </div>
                     </div>

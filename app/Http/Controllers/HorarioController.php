@@ -60,18 +60,19 @@ class HorarioController extends Controller
     {
         $request->validate([
             'sigla_materia' => 'required|exists:materia,sigla',
-            'nroaula' => 'required|exists:aula,nroaula',
             'id_grupo' => 'required|exists:grupo,id',
             'dias_seleccionados' => 'required|array|min:1',
             'dias_seleccionados.*' => 'exists:dia,id',
+            'nroaula' => 'required|array',
+            'nroaula.*' => 'exists:aula,nroaula',
             'horaini' => 'required|array',
             'horafin' => 'required|array',
         ], [
             'sigla_materia.required' => 'Debe seleccionar una materia',
-            'nroaula.required' => 'Debe seleccionar un aula',
             'id_grupo.required' => 'Debe seleccionar un grupo',
             'dias_seleccionados.required' => 'Debe seleccionar al menos un día',
             'dias_seleccionados.min' => 'Debe seleccionar al menos un día',
+            'nroaula.required' => 'Debe seleccionar las aulas para cada día',
         ]);
 
         try {
@@ -81,26 +82,32 @@ class HorarioController extends Controller
             $materia = Materia::find($request->sigla_materia);
             $grupo = Grupo::with('docentes')->find($request->id_grupo);
 
-            // Crear un horario para cada día seleccionado con su hora específica
+            // Crear un horario para cada día seleccionado con su hora y aula específicas
             foreach ($request->dias_seleccionados as $diaId) {
-                // Validar que existan las horas para este día
+                // Validar que existan las horas y aula para este día
                 if (!isset($request->horaini[$diaId]) || !isset($request->horafin[$diaId])) {
                     throw new \Exception("Faltan horas para el día ID: {$diaId}");
                 }
 
+                if (!isset($request->nroaula[$diaId]) || empty($request->nroaula[$diaId])) {
+                    $dia = Dia::find($diaId);
+                    throw new \Exception("Falta seleccionar aula para {$dia->descripcion}");
+                }
+
+                $nroAula = $request->nroaula[$diaId];
                 $horaIni = $request->horaini[$diaId];
                 $horaFin = $request->horafin[$diaId];
 
                 // Validar que la hora fin sea posterior a la hora inicio
                 if ($horaIni >= $horaFin) {
                     $dia = Dia::find($diaId);
-                    throw new \Exception("La hora de fin debe ser posterior a la hora de inicio para {$dia->nombre}");
+                    throw new \Exception("La hora de fin debe ser posterior a la hora de inicio para {$dia->descripcion}");
                 }
 
                 // ===== VALIDACIÓN DE CONFLICTOS =====
                 
                 // 1. Conflicto de AULA (misma aula, mismo día, horas que se cruzan)
-                $conflictoAula = Horario::where('nroaula', $request->nroaula)
+                $conflictoAula = Horario::where('nroaula', $nroAula)
                     ->whereHas('dias', function($q) use ($diaId) {
                         $q->where('dia.id', $diaId);
                     })
@@ -127,7 +134,7 @@ class HorarioController extends Controller
                     $dia = Dia::find($diaId);
                     $materiaConflicto = $conflictoAula->materias->first();
                     throw new \Exception(
-                        "CONFLICTO DE AULA: El aula {$request->nroaula} ya está ocupada el {$dia->nombre} " .
+                        "CONFLICTO DE AULA: El aula {$nroAula} ya está ocupada el {$dia->descripcion} " .
                         "de {$conflictoAula->horaini} a {$conflictoAula->horafin} " .
                         "por {$materiaConflicto->nombre} (Grupo {$conflictoAula->grupo->sigla})"
                     );
@@ -157,7 +164,7 @@ class HorarioController extends Controller
                     $dia = Dia::find($diaId);
                     $materiaConflicto = $conflictoGrupo->materias->first();
                     throw new \Exception(
-                        "CONFLICTO DE GRUPO: El grupo {$grupo->sigla} ya tiene clase el {$dia->nombre} " .
+                        "CONFLICTO DE GRUPO: El grupo {$grupo->sigla} ya tiene clase el {$dia->descripcion} " .
                         "de {$conflictoGrupo->horaini} a {$conflictoGrupo->horafin} " .
                         "({$materiaConflicto->nombre} en aula {$conflictoGrupo->nroaula})"
                     );
@@ -210,7 +217,7 @@ class HorarioController extends Controller
                         $dia = Dia::find($diaId);
                         $materiaConflicto = $conflictoDocente->materias->first();
                         throw new \Exception(
-                            "CONFLICTO DE DOCENTE: El docente {$docente->nombre} ya tiene clase el {$dia->nombre} " .
+                            "CONFLICTO DE DOCENTE: El docente {$docente->nombre} ya tiene clase el {$dia->descripcion} " .
                             "de {$conflictoDocente->horaini} a {$conflictoDocente->horafin} " .
                             "({$materiaConflicto->nombre}, Grupo {$conflictoDocente->grupo->sigla}, Aula {$conflictoDocente->nroaula})"
                         );
@@ -224,12 +231,12 @@ class HorarioController extends Controller
                 $horaFinCarbon = \Carbon\Carbon::parse($horaFin);
                 $tiempoH = $horaFinCarbon->diffInMinutes($horaIniCarbon) / 60;
 
-                // Crear el horario para este día específico
+                // Crear el horario para este día específico con su aula correspondiente
                 $horario = Horario::create([
                     'horaini' => $horaIni,
                     'horafin' => $horaFin,
                     'tiempoh' => $tiempoH,
-                    'nroaula' => $request->nroaula,
+                    'nroaula' => $nroAula,
                     'id_grupo' => $request->id_grupo,
                 ]);
 
@@ -239,16 +246,25 @@ class HorarioController extends Controller
                 // Asignar solo este día
                 $horario->dias()->attach($diaId);
 
-                $horariosCreados[] = $horario->id;
+                $horariosCreados[] = [
+                    'id' => $horario->id,
+                    'dia' => Dia::find($diaId)->descripcion,
+                    'aula' => $nroAula
+                ];
             }
 
             DB::commit();
+
+            // Construir detalle de aulas por día para bitácora
+            $aulasDetalle = collect($horariosCreados)->map(function($h) {
+                return "{$h['dia']}: Aula {$h['aula']}";
+            })->implode(', ');
 
             Bitacora::registrar(
                 'Asignación de horarios',
                 true,
                 'Se asignaron ' . count($horariosCreados) . ' horarios: Materia ' . $materia->nombre . 
-                ' (' . $request->sigla_materia . '), Grupo ID ' . $request->id_grupo . ', Aula ' . $request->nroaula,
+                ' (' . $request->sigla_materia . '), Grupo ' . $grupo->sigla . '. Aulas: ' . $aulasDetalle,
                 auth()->id()
             );
 

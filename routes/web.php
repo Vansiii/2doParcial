@@ -42,6 +42,11 @@ Route::middleware('auth')->group(function () {
     // CU18: Gestionar Usuarios (solo Administrador)
     Route::middleware('role:Administrador')->group(function () {
         Route::resource('usuarios', UsuarioController::class);
+        
+        // CU20: Carga Masiva de Usuarios
+        Route::get('carga-masiva', [App\Http\Controllers\CargaMasivaController::class, 'index'])->name('carga-masiva.index');
+        Route::post('carga-masiva', [App\Http\Controllers\CargaMasivaController::class, 'store'])->name('carga-masiva.store');
+        Route::get('carga-masiva/plantilla', [App\Http\Controllers\CargaMasivaController::class, 'descargarPlantilla'])->name('carga-masiva.plantilla');
     });
 
     // CU04 y CU05: Gestión de Docentes (solo Administrador y Coordinador)

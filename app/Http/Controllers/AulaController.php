@@ -34,7 +34,7 @@ class AulaController extends Controller
             $query->where('id_modulo', $request->id_modulo);
         }
 
-        $aulas = $query->orderBy('nroaula')->paginate(10);
+        $aulas = $query->orderBy('nroaula')->paginate(10)->appends($request->query());
         $modulos = Modulo::orderBy('ubicacion')->get();
 
         Bitacora::registrar(

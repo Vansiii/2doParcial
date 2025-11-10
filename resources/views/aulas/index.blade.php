@@ -149,15 +149,11 @@
                     </div>
 
                     <!-- Paginación -->
-                    <div class="d-flex justify-content-between align-items-center mt-3">
-                        <div class="text-muted">
-                            Mostrando {{ $aulas->firstItem() ?? 0 }} - {{ $aulas->lastItem() ?? 0 }} 
-                            de {{ $aulas->total() }} aulas
-                        </div>
-                        <div>
-                            {{ $aulas->links() }}
-                        </div>
+                    @if($aulas->hasPages())
+                    <div class="d-flex justify-content-center mt-4">
+                        {{ $aulas->appends(request()->query())->links() }}
                     </div>
+                    @endif
                 </div>
             </div>
         </div>

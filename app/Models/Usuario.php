@@ -15,6 +15,7 @@ class Usuario extends Authenticatable
     public $timestamps = false;
 
     protected $fillable = [
+        'ci',
         'codigo',
         'nombre',
         'correo',

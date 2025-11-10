@@ -15,6 +15,11 @@ class Grupo extends Model
 
     protected $fillable = [
         'sigla',
+        'id_periodo',
+    ];
+
+    protected $casts = [
+        'id_periodo' => 'integer',
     ];
 
     /**
@@ -23,6 +28,14 @@ class Grupo extends Model
     public function getNrogrupoAttribute()
     {
         return $this->sigla;
+    }
+
+    /**
+     * Relación con Período Académico
+     */
+    public function periodo()
+    {
+        return $this->belongsTo(Semestre::class, 'id_periodo', 'id');
     }
 
     /**

@@ -62,14 +62,19 @@ class UsuarioController extends Controller
     public function store(Request $request)
     {
         $request->validate([
+            'ci' => 'required|integer|unique:usuario,ci|min:1|max:99999999',
             'codigo' => 'required|numeric|unique:usuario,codigo',
             'nombre' => 'required|string|max:40',
-            'correo' => 'required|email|max:40',
+            'correo' => 'required|email|max:40|unique:usuario,correo',
             'telefono' => 'required|numeric',
             'password' => 'required|string|min:6|confirmed',
             'roles' => 'required|array|min:1',
             'roles.*' => 'exists:rol,id',
         ], [
+            'ci.required' => 'El CI es obligatorio',
+            'ci.unique' => 'Este CI ya está registrado',
+            'ci.min' => 'El CI debe ser mayor a 0',
+            'ci.max' => 'El CI no puede ser mayor a 99999999',
             'codigo.required' => 'El código es obligatorio',
             'codigo.numeric' => 'El código debe ser numérico',
             'codigo.unique' => 'Este código ya está registrado',
@@ -78,6 +83,7 @@ class UsuarioController extends Controller
             'correo.required' => 'El correo es obligatorio',
             'correo.email' => 'Ingrese un correo válido',
             'correo.max' => 'El correo no puede tener más de 40 caracteres',
+            'correo.unique' => 'Este correo ya está registrado',
             'telefono.required' => 'El teléfono es obligatorio',
             'telefono.numeric' => 'El teléfono debe ser numérico',
             'password.required' => 'La contraseña es obligatoria',
@@ -90,9 +96,10 @@ class UsuarioController extends Controller
             DB::beginTransaction();
 
             $usuario = Usuario::create([
+                'ci' => $request->ci,
                 'codigo' => $request->codigo,
-                'nombre' => $request->nombre,
-                'correo' => $request->correo,
+                'nombre' => strtoupper($request->nombre),
+                'correo' => strtolower($request->correo),
                 'telefono' => $request->telefono,
                 'passw' => Hash::make($request->password),
             ]);
@@ -161,14 +168,19 @@ class UsuarioController extends Controller
         $usuario = Usuario::findOrFail($id);
 
         $request->validate([
+            'ci' => 'required|integer|unique:usuario,ci,' . $id . '|min:1|max:99999999',
             'codigo' => 'required|numeric|unique:usuario,codigo,' . $id,
             'nombre' => 'required|string|max:40',
-            'correo' => 'required|email|max:40',
+            'correo' => 'required|email|max:40|unique:usuario,correo,' . $id,
             'telefono' => 'required|numeric',
             'password' => 'nullable|string|min:6|confirmed',
             'roles' => 'required|array|min:1',
             'roles.*' => 'exists:rol,id',
         ], [
+            'ci.required' => 'El CI es obligatorio',
+            'ci.unique' => 'Este CI ya está registrado',
+            'ci.min' => 'El CI debe ser mayor a 0',
+            'ci.max' => 'El CI no puede ser mayor a 99999999',
             'codigo.required' => 'El código es obligatorio',
             'codigo.numeric' => 'El código debe ser numérico',
             'codigo.unique' => 'Este código ya está registrado',
@@ -177,6 +189,7 @@ class UsuarioController extends Controller
             'correo.required' => 'El correo es obligatorio',
             'correo.email' => 'Ingrese un correo válido',
             'correo.max' => 'El correo no puede tener más de 40 caracteres',
+            'correo.unique' => 'Este correo ya está registrado',
             'telefono.required' => 'El teléfono es obligatorio',
             'telefono.numeric' => 'El teléfono debe ser numérico',
             'password.min' => 'La contraseña debe tener al menos 6 caracteres',
@@ -188,9 +201,10 @@ class UsuarioController extends Controller
             DB::beginTransaction();
 
             $data = [
+                'ci' => $request->ci,
                 'codigo' => $request->codigo,
-                'nombre' => $request->nombre,
-                'correo' => $request->correo,
+                'nombre' => strtoupper($request->nombre),
+                'correo' => strtolower($request->correo),
                 'telefono' => $request->telefono,
             ];
 

@@ -17,7 +17,24 @@
                     @method('PUT')
                     
                     <div class="row">
-                        <div class="col-md-12 mb-3">
+                        <div class="col-md-6 mb-3">
+                            <label for="ci" class="form-label">
+                                <i class="fas fa-id-badge"></i> CI (Cédula de Identidad) <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" 
+                                   class="form-control @error('ci') is-invalid @enderror" 
+                                   id="ci" 
+                                   name="ci" 
+                                   value="{{ old('ci', $docente->ci) }}" 
+                                   required
+                                   min="1"
+                                   max="99999999">
+                            @error('ci')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6 mb-3">
                             <label for="nombre" class="form-label">
                                 <i class="fas fa-user"></i> Nombre Completo <span class="text-danger">*</span>
                             </label>
@@ -27,10 +44,12 @@
                                    name="nombre" 
                                    value="{{ old('nombre', $docente->nombre) }}" 
                                    required
-                                   maxlength="40">
+                                   maxlength="40"
+                                   style="text-transform: uppercase;">
                             @error('nombre')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
+                            <small class="text-muted">El nombre se guardará automáticamente en MAYÚSCULAS</small>
                         </div>
                     </div>
                     

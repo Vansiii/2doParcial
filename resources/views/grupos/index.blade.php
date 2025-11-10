@@ -34,15 +34,27 @@
                     <div class="card mb-3">
                         <div class="card-body">
                             <form method="GET" action="{{ route('grupos.index') }}" class="row g-3">
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <label for="sigla" class="form-label">Sigla del Grupo</label>
                                     <input type="text" class="form-control" id="sigla" name="sigla" 
                                            value="{{ request('sigla') }}" placeholder="Ej: A1">
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <label for="sigla_materia" class="form-label">Materia</label>
                                     <input type="text" class="form-control" id="sigla_materia" name="sigla_materia" 
                                            value="{{ request('sigla_materia') }}" placeholder="Ej: INF123">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="id_periodo" class="form-label">Período Académico</label>
+                                    <select class="form-select" id="id_periodo" name="id_periodo">
+                                        <option value="">Todos</option>
+                                        @foreach($periodos as $periodo)
+                                            <option value="{{ $periodo->id }}" 
+                                                {{ request('id_periodo') == $periodo->id ? 'selected' : '' }}>
+                                                {{ $periodo->abreviatura }}
+                                            </option>
+                                        @endforeach
+                                    </select>
                                 </div>
                                 <div class="col-md-2 d-flex align-items-end">
                                     <button type="submit" class="btn btn-primary w-100">
@@ -59,6 +71,7 @@
                             <thead class="table-light">
                                 <tr>
                                     <th>Nro. Grupo</th>
+                                    <th>Período</th>
                                     <th>Materias Asignadas</th>
                                     <th>Docentes Asignados</th>
                                     <th class="text-center">Acciones</th>
@@ -71,6 +84,15 @@
                                             <span class="badge bg-primary fs-6">
                                                 <i class="fas fa-users me-1"></i>Grupo {{ $grupo->sigla }}
                                             </span>
+                                        </td>
+                                        <td>
+                                            @if($grupo->periodo)
+                                                <span class="badge bg-{{ $grupo->periodo->activo ? 'success' : 'secondary' }}">
+                                                    {{ $grupo->periodo->abreviatura }}
+                                                </span>
+                                            @else
+                                                <span class="text-muted">Sin período</span>
+                                            @endif
                                         </td>
                                         <td>
                                             @if($grupo->grupoMaterias && $grupo->grupoMaterias->count() > 0)

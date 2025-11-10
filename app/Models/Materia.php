@@ -18,15 +18,38 @@ class Materia extends Model
     protected $fillable = [
         'sigla',
         'nombre',
-        'id_semestre',
+        'nivel',
     ];
 
     /**
-     * Relación con Semestre
+     * Relación con Períodos Académicos a través de Materia_Periodo
      */
-    public function semestre()
+    public function periodos()
     {
-        return $this->belongsTo(Semestre::class, 'id_semestre');
+        return $this->belongsToMany(Semestre::class, 'materia_periodo', 'sigla_materia', 'id_periodo')
+            ->withPivot('activa', 'created_at')
+            ->withTimestamps();
+    }
+
+    /**
+     * Relación con Período Académico Activo
+     */
+    public function periodoActivo()
+    {
+        return $this->belongsToMany(Semestre::class, 'materia_periodo', 'sigla_materia', 'id_periodo')
+            ->where('periodo_academico.activo', true)
+            ->withPivot('activa', 'created_at');
+    }
+
+    /**
+     * Verificar si está activa en un período específico
+     */
+    public function estaActivaEnPeriodo($idPeriodo)
+    {
+        return $this->periodos()
+            ->where('id_periodo', $idPeriodo)
+            ->wherePivot('activa', true)
+            ->exists();
     }
 
     /**

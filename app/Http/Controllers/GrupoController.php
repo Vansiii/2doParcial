@@ -16,7 +16,7 @@ class GrupoController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Grupo::with(['grupoMaterias.docente', 'grupoMaterias.materia']);
+        $query = Grupo::with(['grupoMaterias.docente', 'grupoMaterias.materia', 'periodo']);
 
         // Filtros de búsqueda
         if ($request->filled('sigla')) {
@@ -29,8 +29,13 @@ class GrupoController extends Controller
             });
         }
 
+        if ($request->filled('id_periodo')) {
+            $query->where('id_periodo', $request->id_periodo);
+        }
+
         $grupos = $query->orderBy('sigla')->paginate(10);
         $materias = Materia::orderBy('sigla')->get();
+        $periodos = \App\Models\Semestre::orderBy('gestion', 'desc')->orderBy('periodo', 'desc')->get();
 
         Bitacora::registrar(
             'Consulta de grupos',
@@ -39,7 +44,7 @@ class GrupoController extends Controller
             auth()->id()
         );
 
-        return view('grupos.index', compact('grupos', 'materias'));
+        return view('grupos.index', compact('grupos', 'materias', 'periodos'));
     }
 
     /**
@@ -48,7 +53,10 @@ class GrupoController extends Controller
     public function create()
     {
         $materias = Materia::orderBy('sigla')->get();
-        return view('grupos.create', compact('materias'));
+        $periodos = \App\Models\Semestre::orderBy('gestion', 'desc')->orderBy('periodo', 'desc')->get();
+        $periodoActivo = \App\Models\Semestre::where('activo', true)->first();
+        
+        return view('grupos.create', compact('materias', 'periodos', 'periodoActivo'));
     }
 
     /**
@@ -58,17 +66,20 @@ class GrupoController extends Controller
     {
         $request->validate([
             'sigla' => 'required|string|max:3|unique:grupo,sigla',
+            'id_periodo' => 'required|exists:periodo_academico,id',
             'materias' => 'nullable|array',
             'materias.*' => 'exists:materia,sigla',
         ], [
             'sigla.required' => 'La sigla del grupo es obligatoria',
             'sigla.unique' => 'Esta sigla ya está registrada',
             'sigla.max' => 'La sigla no puede tener más de 3 caracteres',
+            'id_periodo.required' => 'Debe seleccionar un período académico',
         ]);
 
         try {
             $grupo = Grupo::create([
                 'sigla' => strtoupper($request->sigla),
+                'id_periodo' => $request->id_periodo,
             ]);
 
             // NOTA: No asignamos materias aquí porque grupo_materia requiere id_docente
@@ -113,14 +124,17 @@ class GrupoController extends Controller
         return view('grupos.show', compact('grupo'));
     }
 
-    /**
-     * Mostrar formulario para editar grupo
+        /**
+     * Mostrar formulario de edición
      */
-    public function edit($sigla)
+    public function edit($id)
     {
-        $grupo = Grupo::with(['grupoMaterias.materia'])->where('sigla', $sigla)->firstOrFail();
-        $materias = Materia::orderBy('sigla')->get();
-        return view('grupos.edit', compact('grupo', 'materias'));
+        $grupo = Grupo::with('periodo')->findOrFail($id);
+        $periodos = Semestre::orderBy('gestion', 'desc')
+            ->orderBy('periodo', 'desc')
+            ->get();
+        
+        return view('grupos.edit', compact('grupo', 'periodos'));
     }
 
     /**

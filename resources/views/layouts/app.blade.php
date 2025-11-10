@@ -113,89 +113,107 @@
             </div>
             
             <nav class="nav flex-column px-2">
+                <!-- Dashboard -->
                 <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
                     <i class="fas fa-tachometer-alt"></i> Dashboard
                 </a>
                 
-                @if(auth()->user()->hasRole('Administrador'))
-                <!-- Sección de Gestión de Usuarios -->
+                <!-- ============================================ -->
+                <!-- AUTENTICACIÓN, ADMINISTRACIÓN Y REPORTES -->
+                <!-- ============================================ -->
                 <div class="mt-3">
-                    <small class="text-white-50 px-3">GESTIONAR USUARIOS</small>
+                    <small class="text-white-50 px-3 fw-bold">AUTENTICACIÓN Y ADMINISTRACIÓN</small>
                 </div>
                 
+                <a class="nav-link {{ request()->routeIs('change-password') ? 'active' : '' }}" href="{{ route('change-password') }}">
+                    <i class="fas fa-key"></i> Cambiar Contraseña
+                </a>
+
+                @if(auth()->user()->hasRole('Administrador'))
                 <a class="nav-link {{ request()->routeIs('usuarios.*') ? 'active' : '' }}" href="{{ route('usuarios.index') }}">
-                    <i class="fas fa-users"></i> Usuarios
+                    <i class="fas fa-users-cog"></i> Gestionar Usuarios
+                </a>
+                
+                <a class="nav-link {{ request()->routeIs('carga-masiva.*') ? 'active' : '' }}" href="{{ route('carga-masiva.index') }}">
+                    <i class="fas fa-file-upload"></i> Carga Masiva de Usuarios
                 </a>
                 @endif
 
+                @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Autoridad') || auth()->user()->hasRole('Coordinador'))
+                <a class="nav-link {{ request()->routeIs('reportes.index') ? 'active' : '' }}" href="{{ route('reportes.index') }}">
+                    <i class="fas fa-chart-bar"></i> Generar y Exportar Reportes
+                </a>
+                @endif
+
+                <a class="nav-link" href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </a>
+
                 @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Coordinador'))
-                <!-- Sección de Gestión -->
+                <!-- ============================================ -->
+                <!-- GESTIÓN ACADÉMICA -->
+                <!-- ============================================ -->
                 <div class="mt-3">
-                    <small class="text-white-50 px-3">GESTIONAR DOCENTES</small>
+                    <small class="text-white-50 px-3 fw-bold">GESTIÓN ACADÉMICA</small>
                 </div>
-                
-                <a class="nav-link {{ request()->routeIs('docentes.*') ? 'active' : '' }}" href="{{ route('docentes.index') }}">
-                    <i class="fas fa-chalkboard-teacher"></i> Docentes
+
+                <a class="nav-link {{ request()->routeIs('modulos.*') ? 'active' : '' }}" href="{{ route('modulos.index') }}">
+                    <i class="fas fa-building"></i> Módulos
                 </a>
-                <div class="mt-3">
-                    <small class="text-white-50 px-3">GESTIONAR MATERIAS</small>
-                </div>                
-                <a class="nav-link {{ request()->routeIs('materias.*') ? 'active' : '' }}" href="{{ route('materias.index') }}">
-                    <i class="fas fa-book"></i> Materias
-                </a>
-                <a class="nav-link {{ request()->routeIs('carreras.*') ? 'active' : '' }}" href="{{ route('carreras.index') }}">
-                    <i class="fas fa-graduation-cap"></i> Carreras
-                </a>
-                <div class="mt-3">
-                    <small class="text-white-50 px-3">GESTIONAR CLASES</small>
-                </div>                
+
                 <a class="nav-link {{ request()->routeIs('aulas.*') ? 'active' : '' }}" href="{{ route('aulas.index') }}">
                     <i class="fas fa-door-open"></i> Aulas
                 </a>
-                
+
+                <a class="nav-link {{ request()->routeIs('carreras.*') ? 'active' : '' }}" href="{{ route('carreras.index') }}">
+                    <i class="fas fa-graduation-cap"></i> Carreras
+                </a>
+
+                <a class="nav-link {{ request()->routeIs('docentes.*') ? 'active' : '' }}" href="{{ route('docentes.index') }}">
+                    <i class="fas fa-chalkboard-teacher"></i> Docentes
+                </a>
+
+                <a class="nav-link {{ request()->routeIs('materias.*') ? 'active' : '' }}" href="{{ route('materias.index') }}">
+                    <i class="fas fa-book"></i> Materias
+                </a>
+
                 <a class="nav-link {{ request()->routeIs('grupos.*') ? 'active' : '' }}" href="{{ route('grupos.index') }}">
                     <i class="fas fa-users"></i> Grupos
                 </a>
 
-                <a class="nav-link {{ request()->routeIs('modulos.*') ? 'active' : '' }}" href="{{ route('modulos.index') }}">
-                    <i class="fas fa-building"></i> Módulos
-                </a>                
-                @endif
-                
-                <!-- Sección de Horarios -->
-                <div class="mt-3">
-                    <small class="text-white-50 px-3">GESTIONAR HORARIOS</small>
-                </div>
-                
-                @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Coordinador'))
                 <a class="nav-link {{ request()->routeIs('semestres.*') ? 'active' : '' }}" href="{{ route('semestres.index') }}">
-                    <i class="fas fa-calendar-alt"></i> Semestres
-                </a>                
+                    <i class="fas fa-calendar-alt"></i> Períodos Académicos
+                </a>
+                @endif
 
+                <!-- ============================================ -->
+                <!-- PLANIFICACIÓN Y CONTROL -->
+                <!-- ============================================ -->
+                <div class="mt-3">
+                    <small class="text-white-50 px-3 fw-bold">PLANIFICACIÓN Y CONTROL</small>
+                </div>
+
+                @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Coordinador'))
                 <a class="nav-link {{ request()->routeIs('horarios.asignar') ? 'active' : '' }}" href="{{ route('horarios.asignar') }}">
                     <i class="fas fa-calendar-plus"></i> Asignar Horario
                 </a>
                 @endif
-                
+
                 <a class="nav-link {{ request()->routeIs('horarios.docente') ? 'active' : '' }}" href="{{ route('horarios.docente') }}">
-                    <i class="fas fa-calendar-alt"></i> Por Docente
+                    <i class="fas fa-user-clock"></i> Consultar Horario por Docente
                 </a>
-                
+
                 @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Coordinador') || auth()->user()->hasRole('Docente'))
                 <a class="nav-link {{ request()->routeIs('horarios.grupo') ? 'active' : '' }}" href="{{ route('horarios.grupo') }}">
-                    <i class="fas fa-calendar"></i> Por Grupo
+                    <i class="fas fa-calendar-alt"></i> Consultar Horario por Grupo
                 </a>
                 @endif
-
-                <!-- Sección de Asistencias -->
-                <div class="mt-3">
-                    <small class="text-white-50 px-3">GESTIONAR ASISTENCIAS</small>
-                </div>
 
                 @if(auth()->user()->hasRole('Docente'))
                 <a class="nav-link {{ request()->routeIs('asistencias.marcar') ? 'active' : '' }}" href="{{ route('asistencias.marcar') }}">
                     <i class="fas fa-clipboard-check"></i> Marcar Asistencia
                 </a>
+
                 <a class="nav-link {{ request()->routeIs('asistencias.mis-asistencias') ? 'active' : '' }}" href="{{ route('asistencias.mis-asistencias') }}">
                     <i class="fas fa-history"></i> Mis Asistencias
                 </a>
@@ -203,19 +221,15 @@
 
                 @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Autoridad') || auth()->user()->hasRole('Coordinador'))
                 <a class="nav-link {{ request()->routeIs('asistencias.index') ? 'active' : '' }}" href="{{ route('asistencias.index') }}">
-                    <i class="fas fa-clipboard-list"></i> Consultar Asistencias
+                    <i class="fas fa-clipboard-list"></i> Gestionar Asistencia
                 </a>
                 @endif
-
-                <!-- Sección de Justificaciones -->
-                <div class="mt-3">
-                    <small class="text-white-50 px-3">GESTIONAR JUSTIFICACIONES</small>
-                </div>
 
                 @if(auth()->user()->hasRole('Docente'))
                 <a class="nav-link {{ request()->routeIs('justificaciones.create') ? 'active' : '' }}" href="{{ route('justificaciones.create') }}">
                     <i class="fas fa-file-medical"></i> Nueva Justificación
                 </a>
+
                 <a class="nav-link {{ request()->routeIs('justificaciones.mis-justificaciones') ? 'active' : '' }}" href="{{ route('justificaciones.mis-justificaciones') }}">
                     <i class="fas fa-list-alt"></i> Mis Justificaciones
                 </a>
@@ -223,34 +237,9 @@
 
                 @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Autoridad') || auth()->user()->hasRole('Coordinador'))
                 <a class="nav-link {{ request()->routeIs('justificaciones.index') ? 'active' : '' }}" href="{{ route('justificaciones.index') }}">
-                    <i class="fas fa-clipboard-list"></i> Revisar Justificaciones
+                    <i class="fas fa-tasks"></i> Gestionar Justificaciones
                 </a>
                 @endif
-
-                <!-- Sección de Reportes -->
-                @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Autoridad') || auth()->user()->hasRole('Coordinador'))
-                <div class="mt-3">
-                    <small class="text-white-50 px-3">REPORTES</small>
-                </div>
-                <a class="nav-link {{ request()->routeIs('reportes.index') ? 'active' : '' }}" href="{{ route('reportes.index') }}">
-                    <i class="fas fa-chart-bar"></i> Generar Reportes
-                </a>
-                @endif
-                
-                <!-- Configuración -->
-                <div class="mt-3">
-                    <small class="text-white-50 px-3">GESTIONAR PERFIL</small>
-                </div>
-                
-                <a class="nav-link {{ request()->routeIs('change-password') ? 'active' : '' }}" href="{{ route('change-password') }}">
-                    <i class="fas fa-key"></i> Cambiar Contraseña
-                </a>
-                
-                <hr class="sidebar-divider my-2" style="border-color: rgba(255,255,255,0.2);">
-                
-                <a class="nav-link" href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-                </a>
             </nav>
             
             <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">

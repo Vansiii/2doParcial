@@ -39,20 +39,19 @@
                                     <input type="text" class="form-control" id="sigla" name="sigla" 
                                            value="{{ request('sigla') }}" placeholder="Ej: INF123">
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-5">
                                     <label for="nombre" class="form-label">Nombre</label>
                                     <input type="text" class="form-control" id="nombre" name="nombre" 
                                            value="{{ request('nombre') }}" placeholder="Ej: Programación">
                                 </div>
-                                <div class="col-md-3">
-                                    <label for="semestre" class="form-label">Semestre</label>
-                                    <select class="form-select" id="semestre" name="semestre">
+                                <div class="col-md-2">
+                                    <label for="nivel" class="form-label">Nivel</label>
+                                    <select class="form-select" id="nivel" name="nivel">
                                         <option value="">Todos</option>
-                                        @foreach($semestres as $semestre)
-                                            <option value="{{ $semestre->id }}" 
-                                                {{ request('semestre') == $semestre->id ? 'selected' : '' }}>
-                                                {{ \Carbon\Carbon::parse($semestre->fechaini)->format('Y') }} - 
-                                                {{ $semestre->periodo }}
+                                        @foreach($niveles as $nivelOption)
+                                            <option value="{{ $nivelOption }}" 
+                                                {{ request('nivel') == $nivelOption ? 'selected' : '' }}>
+                                                Nivel {{ $nivelOption }}
                                             </option>
                                         @endforeach
                                     </select>
@@ -73,7 +72,7 @@
                                 <tr>
                                     <th>Sigla</th>
                                     <th>Nombre</th>
-                                    <th>Semestre</th>
+                                    <th>Nivel</th>
                                     <th class="text-center">Acciones</th>
                                 </tr>
                             </thead>
@@ -83,13 +82,10 @@
                                         <td><strong>{{ $materia->sigla }}</strong></td>
                                         <td>{{ $materia->nombre }}</td>
                                         <td>
-                                            @if($materia->semestre)
-                                                <span class="badge bg-info">
-                                                    {{ \Carbon\Carbon::parse($materia->semestre->fechaini)->format('Y') }} - 
-                                                    {{ $materia->semestre->periodo }}
-                                                </span>
+                                            @if($materia->nivel > 0)
+                                                <span class="badge bg-info">Nivel {{ $materia->nivel }}</span>
                                             @else
-                                                <span class="text-muted">Sin semestre</span>
+                                                <span class="text-muted">Sin nivel</span>
                                             @endif
                                         </td>
                                         <td class="text-center">

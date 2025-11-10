@@ -45,6 +45,30 @@
                         </div>
 
                         <div class="mb-4">
+                            <label for="id_periodo" class="form-label">
+                                Período Académico <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select @error('id_periodo') is-invalid @enderror" 
+                                    id="id_periodo" 
+                                    name="id_periodo" 
+                                    required>
+                                <option value="">Seleccione un período</option>
+                                @foreach($periodos as $periodo)
+                                    <option value="{{ $periodo->id }}" 
+                                        {{ old('id_periodo', $periodoActivo?->id) == $periodo->id ? 'selected' : '' }}
+                                        {{ $periodo->activo ? 'style=font-weight:bold;' : '' }}>
+                                        {{ $periodo->abreviatura }}
+                                        {{ $periodo->activo ? '(Activo)' : '' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('id_periodo')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <small class="text-muted">El período activo se selecciona por defecto</small>
+                        </div>
+
+                        <div class="mb-4">
                             <label class="form-label">
                                 <i class="fas fa-book me-1"></i>Materias Asignadas
                             </label>

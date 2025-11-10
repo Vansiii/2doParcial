@@ -7,7 +7,7 @@
             <div class="card shadow-sm">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">
-                        <i class="fas fa-file-medical me-2"></i>CU16: Nueva Justificación
+                        <i class="fas fa-file-medical me-2"></i>Nueva Justificación
                     </h5>
                 </div>
                 <div class="card-body">

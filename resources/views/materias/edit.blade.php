@@ -39,22 +39,19 @@
                             </div>
 
                             <div class="col-md-6 mb-3">
-                                <label for="id_semestre" class="form-label">Semestre</label>
-                                <select class="form-select @error('id_semestre') is-invalid @enderror" 
-                                        id="id_semestre" 
-                                        name="id_semestre">
-                                    <option value="">Sin asignar</option>
-                                    @foreach($semestres as $semestre)
-                                        <option value="{{ $semestre->id }}" 
-                                            {{ (old('id_semestre', $materia->id_semestre) == $semestre->id) ? 'selected' : '' }}>
-                                            {{ \Carbon\Carbon::parse($semestre->fechaini)->format('Y') }} - 
-                                            {{ $semestre->periodo }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('id_semestre')
+                                <label for="nivel" class="form-label">Nivel Curricular</label>
+                                <input type="number" 
+                                       class="form-control @error('nivel') is-invalid @enderror" 
+                                       id="nivel" 
+                                       name="nivel" 
+                                       value="{{ old('nivel', $materia->nivel) }}"
+                                       min="0"
+                                       max="10"
+                                       placeholder="0-10">
+                                @error('nivel')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
+                                <small class="text-muted">Nivel curricular (0 = sin especificar)</small>
                             </div>
                         </div>
 
