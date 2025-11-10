@@ -237,7 +237,7 @@ class CargaMasivaController extends Controller
             'correo' => strtolower(trim($fila['correo'])),
             'telefono' => (int) $fila['telefono'],
             'codigo' => (int) $codigo,
-            'password' => Hash::make($password),
+            'passw' => Hash::make($password),
         ];
     }
 
