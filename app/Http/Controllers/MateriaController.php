@@ -197,4 +197,73 @@ class MateriaController extends Controller
             return back()->withErrors(['error' => 'Error al eliminar la materia. Puede tener horarios o grupos asignados.']);
         }
     }
+
+    /**
+     * Gestionar períodos de una materia
+     */
+    public function gestionarPeriodos($sigla)
+    {
+        $materia = Materia::with(['periodos'])->findOrFail($sigla);
+        $periodos = Semestre::orderBy('gestion', 'desc')
+            ->orderBy('periodo', 'desc')
+            ->get();
+
+        // Obtener IDs de períodos donde ya está asignada
+        $periodosAsignados = $materia->periodos->pluck('id')->toArray();
+
+        Bitacora::registrar(
+            'Gestión de períodos de materia',
+            true,
+            'Usuario accedió a gestionar períodos de: ' . $materia->sigla,
+            auth()->id()
+        );
+
+        return view('materias.periodos', compact('materia', 'periodos', 'periodosAsignados'));
+    }
+
+    /**
+     * Activar/desactivar materia en períodos
+     */
+    public function actualizarPeriodos(Request $request, $sigla)
+    {
+        $materia = Materia::findOrFail($sigla);
+
+        $request->validate([
+            'periodos' => 'nullable|array',
+            'periodos.*' => 'exists:periodo_academico,id',
+        ]);
+
+        try {
+            // Obtener períodos actuales
+            $periodosActuales = $materia->periodos->pluck('id')->toArray();
+            $periodosNuevos = $request->periodos ?? [];
+
+            // Sincronizar con el campo activa = true
+            $syncData = [];
+            foreach ($periodosNuevos as $idPeriodo) {
+                $syncData[$idPeriodo] = ['activa' => true];
+            }
+
+            $materia->periodos()->sync($syncData);
+
+            Bitacora::registrar(
+                'Actualización de períodos de materia',
+                true,
+                'Se actualizaron los períodos de: ' . $materia->sigla,
+                auth()->id()
+            );
+
+            return redirect()->route('materias.index')
+                ->with('success', 'Períodos de la materia actualizados correctamente');
+        } catch (\Exception $e) {
+            Bitacora::registrar(
+                'Error al actualizar períodos',
+                false,
+                'Error: ' . $e->getMessage(),
+                auth()->id()
+            );
+
+            return back()->withErrors(['error' => 'Error al actualizar períodos: ' . $e->getMessage()]);
+        }
+    }
 }

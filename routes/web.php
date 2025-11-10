@@ -43,10 +43,18 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:Administrador')->group(function () {
         Route::resource('usuarios', UsuarioController::class);
         
-        // CU20: Carga Masiva de Usuarios
+        // CU20: Carga Masiva de Datos - Menú Principal
         Route::get('carga-masiva', [App\Http\Controllers\CargaMasivaController::class, 'index'])->name('carga-masiva.index');
-        Route::post('carga-masiva', [App\Http\Controllers\CargaMasivaController::class, 'store'])->name('carga-masiva.store');
-        Route::get('carga-masiva/plantilla', [App\Http\Controllers\CargaMasivaController::class, 'descargarPlantilla'])->name('carga-masiva.plantilla');
+        
+        // CU20A: Carga Masiva de Usuarios
+        Route::get('carga-masiva/usuarios', [App\Http\Controllers\CargaMasivaController::class, 'mostrarFormularioUsuarios'])->name('carga-masiva.usuarios');
+        Route::post('carga-masiva/usuarios', [App\Http\Controllers\CargaMasivaController::class, 'store'])->name('carga-masiva.usuarios.store');
+        Route::get('carga-masiva/usuarios/plantilla', [App\Http\Controllers\CargaMasivaController::class, 'descargarPlantilla'])->name('carga-masiva.usuarios.plantilla');
+        
+        // CU20B: Carga Masiva de Materias
+        Route::get('carga-masiva/materias', [App\Http\Controllers\CargaMasivaMateriaController::class, 'index'])->name('carga-masiva.materias');
+        Route::post('carga-masiva/materias', [App\Http\Controllers\CargaMasivaMateriaController::class, 'store'])->name('carga-masiva.materias.store');
+        Route::get('carga-masiva/materias/plantilla', [App\Http\Controllers\CargaMasivaMateriaController::class, 'descargarPlantilla'])->name('carga-masiva.materias.plantilla');
     });
 
     // CU04 y CU05: Gestión de Docentes (solo Administrador y Coordinador)
@@ -55,6 +63,8 @@ Route::middleware('auth')->group(function () {
         
         // CU07: Gestionar Materias
         Route::resource('materias', MateriaController::class);
+        Route::get('materias/{sigla}/periodos', [MateriaController::class, 'gestionarPeriodos'])->name('materias.periodos');
+        Route::put('materias/{sigla}/periodos', [MateriaController::class, 'actualizarPeriodos'])->name('materias.actualizar-periodos');
         
         // CU08: Gestionar Aulas
         Route::resource('aulas', AulaController::class);

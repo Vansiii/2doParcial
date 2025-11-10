@@ -135,7 +135,7 @@
                 </a>
                 
                 <a class="nav-link {{ request()->routeIs('carga-masiva.*') ? 'active' : '' }}" href="{{ route('carga-masiva.index') }}">
-                    <i class="fas fa-file-upload"></i> Carga Masiva de Usuarios
+                    <i class="fas fa-database"></i> Carga Masiva de Datos
                 </a>
                 @endif
 

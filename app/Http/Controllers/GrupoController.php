@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Grupo;
 use App\Models\Materia;
+use App\Models\MateriaPeriodo;
+use App\Models\Semestre;
 use App\Models\Usuario;
 use App\Models\Bitacora;
 use Illuminate\Http\Request;
@@ -52,9 +54,21 @@ class GrupoController extends Controller
      */
     public function create()
     {
-        $materias = Materia::orderBy('sigla')->get();
-        $periodos = \App\Models\Semestre::orderBy('gestion', 'desc')->orderBy('periodo', 'desc')->get();
-        $periodoActivo = \App\Models\Semestre::where('activo', true)->first();
+        // Obtener período activo
+        $periodoActivo = Semestre::where('activo', true)->first();
+        
+        // Si hay período activo, cargar solo materias de ese período
+        // Si no, cargar todas
+        if ($periodoActivo) {
+            $materias = Materia::whereHas('periodos', function($q) use ($periodoActivo) {
+                $q->where('id_periodo', $periodoActivo->id)
+                  ->where('materia_periodo.activa', true);
+            })->orderBy('sigla')->get();
+        } else {
+            $materias = Materia::orderBy('sigla')->get();
+        }
+        
+        $periodos = Semestre::orderBy('gestion', 'desc')->orderBy('periodo', 'desc')->get();
         
         return view('grupos.create', compact('materias', 'periodos', 'periodoActivo'));
     }
@@ -127,9 +141,9 @@ class GrupoController extends Controller
         /**
      * Mostrar formulario de edición
      */
-    public function edit($id)
+    public function edit($sigla)
     {
-        $grupo = Grupo::with('periodo')->findOrFail($id);
+        $grupo = Grupo::with('periodo')->where('sigla', $sigla)->firstOrFail();
         $periodos = Semestre::orderBy('gestion', 'desc')
             ->orderBy('periodo', 'desc')
             ->get();
@@ -145,37 +159,38 @@ class GrupoController extends Controller
         $grupo = Grupo::where('sigla', $sigla)->firstOrFail();
 
         $request->validate([
-            'materias' => 'nullable|array',
-            'materias.*' => 'exists:materia,sigla',
+            'sigla' => 'required|string|max:3|unique:grupo,sigla,' . $grupo->sigla . ',sigla',
+            'id_periodo' => 'required|exists:periodo_academico,id',
+        ], [
+            'sigla.required' => 'La sigla del grupo es obligatoria',
+            'sigla.unique' => 'Esta sigla ya está registrada',
+            'sigla.max' => 'La sigla no puede tener más de 3 caracteres',
+            'id_periodo.required' => 'Debe seleccionar un período académico',
         ]);
 
         try {
-            // IMPORTANTE: Como grupo_materia requiere id_docente (NOT NULL),
-            // no podemos simplemente sincronizar materias aquí.
-            // Las materias se asignan junto con los docentes en "Gestionar Docentes"
-            
-            // No hay nada que actualizar en este método excepto validar
-            // que el grupo existe (ya lo hicimos arriba)
+            $grupo->sigla = strtoupper($request->sigla);
+            $grupo->id_periodo = $request->id_periodo;
+            $grupo->save();
             
             Bitacora::registrar(
-                'Consulta de grupo para edición',
+                'Actualización de grupo',
                 true,
-                'Usuario accedió a editar grupo: ' . $grupo->sigla,
+                'Se actualizó el grupo: ' . $grupo->sigla,
                 auth()->id()
             );
 
-            // Redirigir a gestionar docentes donde se hace la asignación real
-            return redirect()->route('grupos.asignar-docentes', $grupo->sigla)
-                ->with('info', 'Para asignar materias al grupo, debe asignarlas junto con un docente');
+            return redirect()->route('grupos.index')
+                ->with('success', 'Grupo actualizado correctamente');
         } catch (\Exception $e) {
             Bitacora::registrar(
-                'Error al procesar grupo',
+                'Error al actualizar grupo',
                 false,
                 'Error: ' . $e->getMessage(),
                 auth()->id()
             );
 
-            return back()->withErrors(['error' => 'Error al procesar el grupo: ' . $e->getMessage()])
+            return back()->withErrors(['error' => 'Error al actualizar el grupo: ' . $e->getMessage()])
                 ->withInput();
         }
     }

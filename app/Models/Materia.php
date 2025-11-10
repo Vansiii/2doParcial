@@ -27,8 +27,7 @@ class Materia extends Model
     public function periodos()
     {
         return $this->belongsToMany(Semestre::class, 'materia_periodo', 'sigla_materia', 'id_periodo')
-            ->withPivot('activa', 'created_at')
-            ->withTimestamps();
+            ->withPivot('activa', 'created_at');
     }
 
     /**

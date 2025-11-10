@@ -13,11 +13,19 @@ use Rap2hpoutre\FastExcel\FastExcel;
 class CargaMasivaController extends Controller
 {
     /**
-     * CU20: Mostrar formulario de carga masiva
+     * CU20: Mostrar menú principal de carga masiva
      */
     public function index()
     {
-        return view('carga-masiva.index');
+        return view('carga-masiva.menu');
+    }
+
+    /**
+     * CU20A: Mostrar formulario de carga masiva de usuarios
+     */
+    public function mostrarFormularioUsuarios()
+    {
+        return view('carga-masiva.usuarios');
     }
 
     /**
@@ -128,7 +136,7 @@ class CargaMasivaController extends Controller
                 unlink($tempFilePath);
             }
 
-            return redirect()->route('carga-masiva.index')
+            return redirect()->route('carga-masiva.usuarios')
                 ->with('success', $mensaje)
                 ->with('resultados', $resultados);
 

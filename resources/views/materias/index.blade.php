@@ -95,6 +95,10 @@
                                                     <i class="fas fa-eye"></i>
                                                 </a>
                                                 @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Coordinador'))
+                                                <a href="{{ route('materias.periodos', $materia->sigla) }}" 
+                                                   class="btn btn-sm btn-success" title="Gestionar Períodos">
+                                                    <i class="fas fa-calendar-alt"></i>
+                                                </a>
                                                 <a href="{{ route('materias.edit', $materia->sigla) }}" 
                                                    class="btn btn-sm btn-warning" title="Editar">
                                                     <i class="fas fa-edit"></i>
