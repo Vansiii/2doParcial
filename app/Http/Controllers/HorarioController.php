@@ -46,7 +46,7 @@ class HorarioController extends Controller
         Bitacora::registrar(
             'Acceso a asignación de horarios',
             true,
-            'Usuario accedió a la interfaz de asignación de horarios',
+            'Acceso a interfaz de asignación',
             auth()->id()
         );
 
@@ -303,16 +303,13 @@ class HorarioController extends Controller
 
             DB::commit();
 
-            // Construir detalle de aulas por día para bitácora
-            $aulasDetalle = collect($horariosCreados)->map(function($h) {
-                return "{$h['dia']}: Aula {$h['aula']}";
-            })->implode(', ');
+            // Mensaje corto para bitácora (máx 128 caracteres)
+            $detalle = count($horariosCreados) . ' horarios: ' . $request->sigla_materia . ', Grupo ' . $grupo->sigla;
 
             Bitacora::registrar(
                 'Asignación de horarios',
                 true,
-                'Se asignaron ' . count($horariosCreados) . ' horarios: Materia ' . $materia->nombre . 
-                ' (' . $request->sigla_materia . '), Grupo ' . $grupo->sigla . '. Aulas: ' . $aulasDetalle,
+                $detalle,
                 auth()->id()
             );
 
@@ -321,10 +318,16 @@ class HorarioController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             
+            // Truncar el mensaje de error si es muy largo
+            $errorMsg = $e->getMessage();
+            if (strlen($errorMsg) > 120) {
+                $errorMsg = substr($errorMsg, 0, 120) . '...';
+            }
+            
             Bitacora::registrar(
                 'Error al asignar horarios',
                 false,
-                'Error: ' . $e->getMessage(),
+                $errorMsg,
                 auth()->id()
             );
 
@@ -360,20 +363,19 @@ class HorarioController extends Controller
             $docenteSeleccionado = Usuario::findOrFail($id);
             
             // Obtener horarios del docente a través de grupo_materia
+            // Debe verificar que TANTO el grupo COMO la materia estén asignados juntos al docente
             $horarios = Horario::with(['materias', 'aula', 'grupo', 'dias'])
-                ->whereHas('materias', function($queryMat) use ($id) {
-                    // Buscar horarios de materias donde este docente está asignado
-                    $queryMat->whereIn('sigla', function($subQuery) use ($id) {
-                        $subQuery->select('sigla_materia')
-                            ->from('grupo_materia')
-                            ->where('id_docente', $id);
-                    });
-                })
-                ->whereIn('id_grupo', function($queryGrupo) use ($id) {
-                    // Y que sean de grupos donde este docente está asignado
-                    $queryGrupo->select('id_grupo')
+                ->whereExists(function($subQuery) use ($id) {
+                    $subQuery->select(DB::raw(1))
                         ->from('grupo_materia')
-                        ->where('id_docente', $id);
+                        ->whereColumn('grupo_materia.id_grupo', 'horario.id_grupo')
+                        ->where('grupo_materia.id_docente', $id)
+                        ->whereExists(function($materiaQuery) {
+                            $materiaQuery->select(DB::raw(1))
+                                ->from('horario_mat')
+                                ->whereColumn('horario_mat.id_horario', 'horario.id')
+                                ->whereColumn('horario_mat.sigla_materia', 'grupo_materia.sigla_materia');
+                        });
                 })
                 ->orderBy('horaini')
                 ->get();
@@ -381,7 +383,7 @@ class HorarioController extends Controller
             Bitacora::registrar(
                 'Consulta de horario por docente',
                 true,
-                'Usuario consultó el horario del docente: ' . $docenteSeleccionado->nombre,
+                'Docente: ' . substr($docenteSeleccionado->nombre, 0, 100),
                 auth()->id()
             );
         }
@@ -415,7 +417,7 @@ class HorarioController extends Controller
             Bitacora::registrar(
                 'Consulta de horario por grupo',
                 true,
-                'Usuario consultó el horario del grupo ID: ' . $id . ' (Sigla: ' . $grupoSeleccionado->sigla . ')',
+                'Grupo: ' . $grupoSeleccionado->sigla,
                 auth()->id()
             );
         }
@@ -441,10 +443,15 @@ class HorarioController extends Controller
 
             return back()->with('success', 'Horario eliminado correctamente');
         } catch (\Exception $e) {
+            $errorMsg = $e->getMessage();
+            if (strlen($errorMsg) > 120) {
+                $errorMsg = substr($errorMsg, 0, 120) . '...';
+            }
+            
             Bitacora::registrar(
                 'Error al eliminar horario',
                 false,
-                'Error: ' . $e->getMessage(),
+                $errorMsg,
                 auth()->id()
             );
 

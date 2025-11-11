@@ -91,9 +91,9 @@ class ReporteController extends Controller
 
         $horarios = $query->get();
 
-        // Organizar horarios por día
+        // Organizar horarios por día (excluyendo domingo - ID 7)
         $horariosPorDia = [];
-        $dias = Dia::orderBy('id')->get();
+        $dias = Dia::where('id', '!=', 7)->orderBy('id')->get();
         
         foreach ($dias as $dia) {
             $horariosPorDia[$dia->nombre] = $horarios->filter(function ($horario) use ($dia) {
