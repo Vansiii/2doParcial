@@ -316,7 +316,7 @@
                                             }
                                         }
                                         
-                                        // Asignar colores únicos a cada materia
+                                        // Asignar colores únicos a cada materia (en vista de grupo no cambia porque es un solo grupo)
                                         $materiasColores = [];
                                         $colorIndex = 1;
                                         foreach($horarios as $horario) {

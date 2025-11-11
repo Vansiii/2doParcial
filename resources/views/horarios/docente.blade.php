@@ -288,14 +288,22 @@
                                             }
                                         }
                                         
-                                        // Asignar colores únicos a cada materia
+                                        // Asignar colores únicos a cada combinación materia-grupo
                                         $materiasColores = [];
                                         $colorIndex = 1;
                                         foreach($horarios as $horario) {
                                             $materia = $horario->materias->first();
-                                            if ($materia && !isset($materiasColores[$materia->sigla])) {
-                                                $materiasColores[$materia->sigla] = 'color-' . $colorIndex;
-                                                $colorIndex = ($colorIndex % 10) + 1;
+                                            $grupo = $horario->grupo;
+                                            if ($materia && $grupo) {
+                                                $clave = $materia->sigla . '-' . $grupo->sigla;
+                                                if (!isset($materiasColores[$clave])) {
+                                                    $materiasColores[$clave] = [
+                                                        'color' => 'color-' . $colorIndex,
+                                                        'materia' => $materia->sigla,
+                                                        'grupo' => $grupo->sigla
+                                                    ];
+                                                    $colorIndex = ($colorIndex % 10) + 1;
+                                                }
                                             }
                                         }
                                     @endphp
@@ -336,15 +344,14 @@
                                                         }
                                                     }
                                                 @endphp                                                                @if($horarioEncontrado)
-                                                                    @php
-                                                                        $materia = $horarioEncontrado->materias->first();
-                                                                        $aula = $horarioEncontrado->aula;
-                                                                        $modulo = $aula && $aula->modulo ? $aula->modulo->codigo : '';
-                                                                        $grupo = $horarioEncontrado->grupo;
-                                                                        $colorClass = $materia ? ($materiasColores[$materia->sigla] ?? 'color-1') : 'color-1';
-                                                                    @endphp
-                                                                    
-                                                                    <div class="horario-block {{ $colorClass }}" 
+                                                    @php
+                                                        $materia = $horarioEncontrado->materias->first();
+                                                        $aula = $horarioEncontrado->aula;
+                                                        $modulo = $aula && $aula->modulo ? $aula->modulo->codigo : '';
+                                                        $grupo = $horarioEncontrado->grupo;
+                                                        $clave = ($materia && $grupo) ? ($materia->sigla . '-' . $grupo->sigla) : '';
+                                                        $colorClass = $clave && isset($materiasColores[$clave]) ? $materiasColores[$clave]['color'] : 'color-1';
+                                                    @endphp                                                                    <div class="horario-block {{ $colorClass }}" 
                                                                          title="{{ $materia ? $materia->nombre : '' }} - Grupo {{ $grupo ? $grupo->sigla : '' }}">
                                                                         <div class="horario-materia">
                                                                             {{ $materia ? $materia->sigla : '' }}
@@ -367,27 +374,19 @@
                                         <div class="mt-3 p-3 bg-light rounded">
                                             <h6 class="mb-2"><i class="fas fa-info-circle me-2"></i>Leyenda de Materias y Grupos</h6>
                                             <div class="row">
-                                                @foreach($materiasColores as $siglaMateria => $colorClass)
+                                                @foreach($materiasColores as $clave => $info)
                                                     @php
-                                                        $materiaInfo = \App\Models\Materia::where('sigla', $siglaMateria)->first();
-                                                        // Buscar el grupo asociado en los horarios
-                                                        $grupoAsociado = null;
-                                                        foreach($horarios as $h) {
-                                                            if ($h->materias->first() && $h->materias->first()->sigla === $siglaMateria) {
-                                                                $grupoAsociado = $h->grupo;
-                                                                break;
-                                                            }
-                                                        }
+                                                        $materiaInfo = \App\Models\Materia::where('sigla', $info['materia'])->first();
                                                     @endphp
                                                     <div class="col-md-4 col-sm-6 mb-2">
                                                         <div class="d-flex align-items-center">
-                                                            <div class="horario-block {{ $colorClass }}" style="width: 60px; height: 50px; min-height: 50px; margin-right: 10px; flex-shrink: 0;">
-                                                                <div class="horario-materia" style="font-size: 0.85rem;">{{ $siglaMateria }}</div>
+                                                            <div class="horario-block {{ $info['color'] }}" style="width: 60px; height: 50px; min-height: 50px; margin-right: 10px; flex-shrink: 0;">
+                                                                <div class="horario-materia" style="font-size: 0.85rem;">{{ $info['materia'] }}</div>
                                                             </div>
                                                             <div style="flex: 1;">
-                                                                <strong>{{ $materiaInfo?->nombre ?? $siglaMateria }}</strong><br>
+                                                                <strong>{{ $materiaInfo?->nombre ?? $info['materia'] }}</strong><br>
                                                                 <small class="text-muted">
-                                                                    <i class="fas fa-users"></i> Grupo {{ $grupoAsociado?->sigla ?? 'N/A' }}
+                                                                    <i class="fas fa-users"></i> Grupo {{ $info['grupo'] }}
                                                                 </small>
                                                             </div>
                                                         </div>
