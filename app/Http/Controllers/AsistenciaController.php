@@ -140,13 +140,14 @@ class AsistenciaController extends Controller
         $horario = Horario::findOrFail($request->id_horario);
 
         // Verificar que el docente esté asignado a este horario
+        // El horario debe tener una materia que esté asignada al docente en el grupo
         $asignado = DB::table('horario_mat')
-            ->join('grupo_materia', function($join) use ($usuario, $horario) {
+            ->join('grupo_materia', function($join) use ($horario) {
                 $join->on('horario_mat.sigla_materia', '=', 'grupo_materia.sigla_materia')
-                     ->where('grupo_materia.id_docente', '=', $usuario->id)
                      ->where('grupo_materia.id_grupo', '=', $horario->id_grupo);
             })
             ->where('horario_mat.id_horario', $horario->id)
+            ->where('grupo_materia.id_docente', $usuario->id)
             ->exists();
 
         if (!$asignado) {
