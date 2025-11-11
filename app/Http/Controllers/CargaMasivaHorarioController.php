@@ -151,7 +151,7 @@ class CargaMasivaHorarioController extends Controller
                 'id_usuario' => auth()->id(),
             ]);
 
-            $mensaje = "✅ Carga masiva completada exitosamente. ";
+            $mensaje = "Carga masiva completada exitosamente. ";
             $mensaje .= "Procesados: {$procesados} registros. ";
             if ($asignacionesCreadas > 0) {
                 $mensaje .= "Asignaciones Grupo-Materia-Docente creadas: {$asignacionesCreadas}. ";

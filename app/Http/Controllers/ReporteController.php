@@ -104,15 +104,21 @@ class ReporteController extends Controller
         $docente = $idDocente ? Usuario::find($idDocente) : null;
         $grupo = $idGrupo ? Grupo::find($idGrupo) : null;
 
-        // Registrar en bitácora
+        // Registrar en bitácora (máx 128 caracteres)
+        $detalle = strtoupper($formato);
+        if ($docente) {
+            $detalle .= ', Doc: ' . substr($docente->nombre, 0, 40);
+        }
+        if ($grupo) {
+            $detalle .= ', Gpo: ' . $grupo->sigla;
+        }
+        
         Bitacora::create([
             'fecha' => now(),
             'ip' => request()->ip(),
-            'accion' => 'Generó reporte de Horarios Semanales',
+            'accion' => 'Reporte Horarios Semanales',
             'estado' => true,
-            'detalle' => 'Formato: ' . strtoupper($formato) . 
-                         ($docente ? ', Docente: ' . $docente->nombre : '') .
-                         ($grupo ? ', Grupo: ' . $grupo->sigla : ''),
+            'detalle' => substr($detalle, 0, 128),
             'id_usuario' => auth()->id(),
         ]);
 
@@ -253,14 +259,52 @@ class ReporteController extends Controller
                 ->with('horario.dias')
                 ->get();
             
-            // Contar tipos de asistencia
+            // Contar tipos de asistencia registradas
             $asistenciasPuntuales = $asistencias->filter(function($a) {
                 return strtolower(trim($a->tipo)) == 'puntual';
             })->count();
             
-            $ausencias = $asistencias->filter(function($a) {
+            $ausenciasRegistradas = $asistencias->filter(function($a) {
                 return strtolower(trim($a->tipo)) == 'ausente';
             })->count();
+            
+            // CALCULAR AUSENCIAS DINÁMICAMENTE
+            // Contar cuántos horarios pasados debió tener el docente
+            $horariosEsperados = 0;
+            $hoy = \Carbon\Carbon::now()->startOfDay();
+            
+            foreach ($horariosDocente as $horario) {
+                // Por cada día que tiene este horario
+                foreach ($horario->dias as $dia) {
+                    // Contar cuántas veces ha ocurrido este día desde alguna fecha de inicio
+                    // Asumiendo que los horarios empezaron al inicio del semestre
+                    // Por simplicidad, contamos las últimas 16 semanas (un semestre típico)
+                    $fechaInicio = $hoy->copy()->subWeeks(16);
+                    $fechaActual = $fechaInicio->copy();
+                    
+                    while ($fechaActual->lte($hoy)) {
+                        // Si el día de la semana coincide (1=Lunes, 7=Domingo)
+                        if ($fechaActual->dayOfWeek == $dia->id || 
+                            ($dia->id == 7 && $fechaActual->dayOfWeek == 0)) {
+                            
+                            // Verificar que la hora del horario ya haya pasado
+                            $fechaHoraFin = $fechaActual->copy()->setTimeFromTimeString($horario->horafin);
+                            if ($fechaHoraFin->lt(\Carbon\Carbon::now())) {
+                                $horariosEsperados++;
+                            }
+                        }
+                        $fechaActual->addDay();
+                    }
+                }
+            }
+            
+            // Ausencias = horarios esperados - asistencias registradas (puntuales + tardanzas)
+            $asistenciasRegistradasTotal = $asistencias->filter(function($a) {
+                $tipo = strtolower(trim($a->tipo));
+                return $tipo == 'puntual' || $tipo == 'tardanza';
+            })->count();
+            
+            $ausencias = max(0, $horariosEsperados - $asistenciasRegistradasTotal - $ausenciasRegistradas);
             
             $tardanzas = $asistencias->filter(function($a) {
                 return strtolower(trim($a->tipo)) == 'tardanza';
@@ -306,14 +350,18 @@ class ReporteController extends Controller
             ];
         }
 
-        // Registrar en bitácora
+        // Registrar en bitácora (máx 128 caracteres)
+        $detalle = strtoupper($formato);
+        if ($idDocente && $docentes->isNotEmpty()) {
+            $detalle .= ', Doc: ' . substr($docentes->first()->nombre, 0, 40);
+        }
+        
         Bitacora::create([
             'fecha' => now(),
             'ip' => request()->ip(),
-            'accion' => 'Generó reporte de Carga Horaria',
+            'accion' => 'Reporte Carga Horaria',
             'estado' => true,
-            'detalle' => 'Formato: ' . strtoupper($formato) . 
-                         ($idDocente ? ', Docente: ' . $docentes->first()->nombre : ''),
+            'detalle' => substr($detalle, 0, 128),
             'id_usuario' => auth()->id(),
         ]);
 
@@ -368,16 +416,33 @@ class ReporteController extends Controller
         $fechaInicio = $request->fecha_inicio;
         $fechaFin = $request->fecha_fin;
 
-        // Construir consulta
+        // Construir consulta - SOLO registros de asistencia existentes
         $query = Asistencia::with([
             'horario.grupo.periodo',
             'horario.materias',
             'horario.aula',
+            'horario.dias',
             'usuario'
         ]);
 
         if ($idDocente) {
-            $query->where('id_usuario', $idDocente);
+            // Filtrar asistencias del docente Y verificar que el horario corresponda
+            // a una materia/grupo asignada a ese docente
+            $query->where('id_usuario', $idDocente)
+                ->whereHas('horario', function($q) use ($idDocente) {
+                    $q->whereExists(function($subQuery) use ($idDocente) {
+                        $subQuery->select(DB::raw(1))
+                            ->from('grupo_materia')
+                            ->whereColumn('grupo_materia.id_grupo', 'horario.id_grupo')
+                            ->where('grupo_materia.id_docente', $idDocente)
+                            ->whereExists(function($materiaQuery) {
+                                $materiaQuery->select(DB::raw(1))
+                                    ->from('horario_mat')
+                                    ->whereColumn('horario_mat.id_horario', 'horario.id')
+                                    ->whereColumn('horario_mat.sigla_materia', 'grupo_materia.sigla_materia');
+                            });
+                    });
+                });
         }
 
         if ($idGrupo) {
@@ -396,60 +461,47 @@ class ReporteController extends Controller
 
         $asistencias = $query->orderBy('fecha', 'desc')->get();
 
-        // Obtener justificaciones aprobadas del periodo (para todos los docentes o el filtrado)
-        $justificacionesQuery = Justificacion::where('estado', 'Aprobada');
-        
+        // Obtener justificaciones aprobadas SOLO del docente filtrado
+        $justificaciones = collect();
         if ($idDocente) {
-            $justificacionesQuery->where('id_usuario', $idDocente);
-        }
-        
-        if ($fechaInicio) {
-            $justificacionesQuery->where(function($q) use ($fechaInicio) {
-                $q->where('fecha_inicio', '<=', $fechaInicio)
-                  ->where('fecha_fin', '>=', $fechaInicio);
-            })->orWhere(function($q) use ($fechaInicio) {
-                $q->where('fecha_inicio', '>=', $fechaInicio);
-            });
-        }
-        
-        if ($fechaFin) {
-            $justificacionesQuery->where('fecha_inicio', '<=', $fechaFin);
-        }
-        
-        $justificaciones = $justificacionesQuery->get();
-
-        // Marcar asistencias que tienen justificación aprobada
-        $asistencias = $asistencias->map(function($asistencia) use ($justificaciones) {
-            // Verificar si la fecha de esta asistencia está dentro de alguna justificación aprobada
-            $tieneJustificacion = $justificaciones->first(function($justificacion) use ($asistencia) {
-                $fechaAsistencia = \Carbon\Carbon::parse($asistencia->fecha);
-                return $fechaAsistencia->between($justificacion->fecha_inicio, $justificacion->fecha_fin);
-            });
+            $justificacionesQuery = Justificacion::where('estado', 'Aprobada')
+                ->where('id_usuario', $idDocente);
             
-            // Si tiene justificación aprobada, cambiar el tipo a "Licencia"
-            if ($tieneJustificacion) {
-                $asistencia->tipo_original = $asistencia->tipo;
-                $asistencia->tipo = 'Licencia';
-                $asistencia->tiene_justificacion = true;
-                $asistencia->justificacion = $tieneJustificacion;
-            } else {
-                $asistencia->tiene_justificacion = false;
+            if ($fechaInicio && $fechaFin) {
+                $justificacionesQuery->where(function($q) use ($fechaInicio, $fechaFin) {
+                    // Justificación que solapa con el rango de fechas
+                    $q->where(function($subQ) use ($fechaInicio, $fechaFin) {
+                        $subQ->whereBetween('fecha_inicio', [$fechaInicio, $fechaFin])
+                             ->orWhereBetween('fecha_fin', [$fechaInicio, $fechaFin])
+                             ->orWhere(function($innerQ) use ($fechaInicio, $fechaFin) {
+                                 $innerQ->where('fecha_inicio', '<=', $fechaInicio)
+                                        ->where('fecha_fin', '>=', $fechaFin);
+                             });
+                    });
+                });
             }
             
-            return $asistencia;
-        });
+            $justificaciones = $justificacionesQuery->get();
+        }
 
-        // Calcular estadísticas basadas en el campo 'tipo' ajustado (case-insensitive)
+        // NO modificar las asistencias existentes
+        // Las justificaciones NO cambian registros existentes, son información adicional
+        
+        // Calcular estadísticas SIMPLES basadas SOLO en registros existentes
         $totalAsistencias = $asistencias->count();
+        
         $presentes = $asistencias->filter(function($a) { 
             return trim(strtolower($a->tipo)) == 'puntual'; 
         })->count();
+        
         $ausentes = $asistencias->filter(function($a) { 
             return trim(strtolower($a->tipo)) == 'ausente'; 
         })->count();
+        
         $licencias = $asistencias->filter(function($a) { 
             return trim(strtolower($a->tipo)) == 'licencia'; 
         })->count();
+        
         $retrasos = $asistencias->filter(function($a) { 
             return trim(strtolower($a->tipo)) == 'tardanza'; 
         })->count();
@@ -459,17 +511,24 @@ class ReporteController extends Controller
         $docente = $idDocente ? Usuario::find($idDocente) : null;
         $grupo = $idGrupo ? Grupo::find($idGrupo) : null;
 
-        // Registrar en bitácora
+        // Registrar en bitácora (máx 128 caracteres)
+        $detalle = strtoupper($formato);
+        if ($docente) {
+            $detalle .= ', Doc: ' . substr($docente->nombre, 0, 30);
+        }
+        if ($grupo) {
+            $detalle .= ', Gpo: ' . $grupo->sigla;
+        }
+        if ($fechaInicio && $fechaFin) {
+            $detalle .= ', ' . date('d/m', strtotime($fechaInicio)) . '-' . date('d/m', strtotime($fechaFin));
+        }
+        
         Bitacora::create([
             'fecha' => now(),
             'ip' => request()->ip(),
-            'accion' => 'Generó reporte de Asistencia',
+            'accion' => 'Reporte de Asistencia',
             'estado' => true,
-            'detalle' => 'Formato: ' . strtoupper($formato) . 
-                         ($docente ? ', Docente: ' . $docente->nombre : '') .
-                         ($grupo ? ', Grupo: ' . $grupo->sigla : '') .
-                         ($fechaInicio ? ', Desde: ' . $fechaInicio : '') .
-                         ($fechaFin ? ', Hasta: ' . $fechaFin : ''),
+            'detalle' => substr($detalle, 0, 128),
             'id_usuario' => auth()->id(),
         ]);
 
@@ -485,24 +544,20 @@ class ReporteController extends Controller
             // Preparar datos para Excel/CSV
             $data = [];
             foreach ($asistencias as $asistencia) {
-                $docenteNombre = $asistencia->usuario->nombre ?? 'N/A';
-                $materiaNombre = ($asistencia->horario && $asistencia->horario->materias->isNotEmpty()) 
-                    ? $asistencia->horario->materias->first()->nombre 
-                    : 'N/A';
-                
-                $tipoDisplay = $asistencia->tipo;
-                if ($asistencia->tiene_justificacion) {
-                    $tipoDisplay .= ' (JUSTIFICADA)';
+                // Obtener materia correcta desde horario_mat
+                $materiaNombre = 'N/A';
+                if ($asistencia->horario && $asistencia->horario->materias->isNotEmpty()) {
+                    $materiaNombre = $asistencia->horario->materias->first()->nombre;
                 }
                 
                 $data[] = [
                     'Fecha' => \Carbon\Carbon::parse($asistencia->fecha)->format('d/m/Y'),
                     'Hora' => \Carbon\Carbon::parse($asistencia->hora)->format('H:i'),
-                    'Docente' => $docenteNombre,
+                    'Docente' => $asistencia->usuario->nombre ?? 'N/A',
                     'Grupo' => $asistencia->horario->grupo->sigla ?? 'N/A',
                     'Materia' => $materiaNombre,
                     'Aula' => $asistencia->horario->aula->nroaula ?? 'N/A',
-                    'Tipo' => $tipoDisplay,
+                    'Tipo' => ucfirst($asistencia->tipo),
                 ];
             }
             
@@ -556,14 +611,18 @@ class ReporteController extends Controller
 
         $dia = $idDia ? Dia::find($idDia) : null;
 
-        // Registrar en bitácora
+        // Registrar en bitácora (máx 128 caracteres)
+        $detalle = strtoupper($formato);
+        if ($dia) {
+            $detalle .= ', Día: ' . $dia->descripcion;
+        }
+        
         Bitacora::create([
             'fecha' => now(),
             'ip' => request()->ip(),
-            'accion' => 'Generó reporte de Aulas Disponibles',
+            'accion' => 'Reporte Aulas Disponibles',
             'estado' => true,
-            'detalle' => 'Formato: ' . strtoupper($formato) . 
-                         ($dia ? ', Día: ' . $dia->descripcion : ''),
+            'detalle' => substr($detalle, 0, 128),
             'id_usuario' => auth()->id(),
         ]);
 
@@ -643,13 +702,15 @@ class ReporteController extends Controller
                 break;
         }
 
-        // Registrar en bitácora
+        // Registrar en bitácora (máx 128 caracteres)
+        $detalle = strtoupper($formato) . ', Cols: ' . count($columnasSeleccionadas);
+        
         Bitacora::create([
             'fecha' => now(),
             'ip' => request()->ip(),
-            'accion' => 'Generó reporte personalizado: ' . $titulo,
+            'accion' => 'Reporte personalizado',
             'estado' => true,
-            'detalle' => 'Formato: ' . strtoupper($formato) . ', Columnas: ' . count($columnasSeleccionadas),
+            'detalle' => substr($detalle, 0, 128),
             'id_usuario' => auth()->id(),
         ]);
 

@@ -130,6 +130,11 @@ Route::middleware('auth')->group(function () {
     // Consultar asistencias de todos los docentes (Administrador, Autoridad, Coordinador)
     Route::middleware('role:Administrador,Autoridad,Coordinador')->group(function () {
         Route::get('asistencias', [AsistenciaController::class, 'index'])->name('asistencias.index');
+        
+        // CU15: Gestionar Ausencias Manualmente
+        Route::get('asistencias/gestionar-ausencias', [AsistenciaController::class, 'gestionarAusencias'])->name('asistencias.gestionar-ausencias');
+        Route::post('asistencias/marcar-ausencia', [AsistenciaController::class, 'marcarAusencia'])->name('asistencias.marcar-ausencia');
+        Route::post('asistencias/marcar-ausencias-masivas', [AsistenciaController::class, 'marcarAusenciasMasivas'])->name('asistencias.marcar-ausencias-masivas');
     });
 
     // CU16: Gestionar Justificaciones

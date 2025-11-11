@@ -149,9 +149,6 @@
         @if($fechaInicio && $fechaFin)
             <p><strong>Período:</strong> {{ \Carbon\Carbon::parse($fechaInicio)->format('d/m/Y') }} al {{ \Carbon\Carbon::parse($fechaFin)->format('d/m/Y') }}</p>
         @endif
-        <p style="font-size: 9px; color: #ff9800; margin-top: 8px;">
-            <strong>Nota:</strong> Las licencias marcadas como "JUSTIFICADA" corresponden a ausencias o tardanzas que fueron respaldadas con una justificación aprobada.
-        </p>
     </div>
     @endif
 
@@ -205,8 +202,8 @@
                     <td>{{ $asistencia->usuario->nombre ?? 'N/A' }}</td>
                     <td>{{ $asistencia->horario->grupo->sigla ?? 'N/A' }}</td>
                     <td>
-                        @if($asistencia->horario->grupo && $asistencia->horario->grupo->materias->isNotEmpty())
-                            {{ $asistencia->horario->grupo->materias->first()->nombre }}
+                        @if($asistencia->horario && $asistencia->horario->materias->isNotEmpty())
+                            {{ $asistencia->horario->materias->first()->nombre }}
                         @else
                             N/A
                         @endif
@@ -229,9 +226,6 @@
                     <td style="text-align: center;">
                         @if(trim(strtolower($asistencia->tipo)) == 'licencia')
                             <span class="badge-si">SÍ</span>
-                            @if($asistencia->tiene_justificacion ?? false)
-                                <br><span class="badge-justificado">JUSTIFICADA</span>
-                            @endif
                         @else
                             <span class="badge-no">NO</span>
                         @endif

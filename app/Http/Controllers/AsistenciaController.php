@@ -235,4 +235,192 @@ class AsistenciaController extends Controller
             return back()->withErrors(['error' => 'Error al registrar asistencia: ' . $e->getMessage()]);
         }
     }
+
+    /**
+     * CU15: Gestionar Ausencias (Admin, Coordinador)
+     * Muestra horarios del día donde no se ha marcado asistencia
+     */
+    public function gestionarAusencias(Request $request)
+    {
+        // Fecha a revisar (por defecto hoy, pero puede seleccionar otra)
+        $fecha = $request->filled('fecha') ? Carbon::parse($request->fecha) : Carbon::now();
+        $fechaStr = $fecha->toDateString();
+        
+        // Capitalizar día de la semana
+        $diaSemana = ucfirst($fecha->locale('es')->dayName);
+        
+        // Obtener todos los horarios que deberían tener clase ese día
+        $horarios = Horario::with(['grupo', 'aula', 'dias', 'materias'])
+            ->whereHas('dias', function($query) use ($diaSemana) {
+                $query->where('descripcion', $diaSemana);
+            })
+            ->where('horafin', '<=', Carbon::now()->format('H:i:s')) // Solo horarios que ya pasaron
+            ->orderBy('horaini')
+            ->get();
+        
+        $horariosSinAsistencia = [];
+        
+        foreach ($horarios as $horario) {
+            // Obtener docentes asignados a este horario
+            $docentes = DB::table('grupo_materia')
+                ->join('horario_mat', function($join) use ($horario) {
+                    $join->on('horario_mat.sigla_materia', '=', 'grupo_materia.sigla_materia')
+                         ->where('grupo_materia.id_grupo', '=', $horario->id_grupo);
+                })
+                ->join('usuario', 'usuario.id', '=', 'grupo_materia.id_docente')
+                ->where('horario_mat.id_horario', $horario->id)
+                ->select('usuario.*', 'grupo_materia.sigla_materia')
+                ->distinct()
+                ->get();
+            
+            foreach ($docentes as $docente) {
+                // Verificar si ya tiene asistencia marcada
+                $asistencia = Asistencia::where('id_horario', $horario->id)
+                    ->where('id_usuario', $docente->id)
+                    ->whereDate('fecha', $fechaStr)
+                    ->first();
+                
+                if (!$asistencia) {
+                    // Este docente no marcó asistencia
+                    $horariosSinAsistencia[] = [
+                        'horario' => $horario,
+                        'docente' => $docente,
+                        'fecha' => $fechaStr,
+                    ];
+                }
+            }
+        }
+        
+        Bitacora::registrar(
+            'Gestión de ausencias',
+            true,
+            'Consulta horarios sin asistencia para ' . $fechaStr,
+            auth()->id()
+        );
+        
+        return view('asistencias.gestionar-ausencias', compact('horariosSinAsistencia', 'fecha'));
+    }
+
+    /**
+     * CU15: Marcar Ausencia Manualmente (Admin, Coordinador)
+     */
+    public function marcarAusencia(Request $request)
+    {
+        $request->validate([
+            'id_horario' => 'required|exists:horario,id',
+            'id_docente' => 'required|exists:usuario,id',
+            'fecha' => 'required|date',
+        ]);
+
+        $horario = Horario::findOrFail($request->id_horario);
+        $docente = Usuario::findOrFail($request->id_docente);
+        $fecha = Carbon::parse($request->fecha);
+
+        // Verificar que no exista ya una asistencia
+        $asistenciaExistente = Asistencia::where('id_horario', $request->id_horario)
+            ->where('id_usuario', $request->id_docente)
+            ->whereDate('fecha', $fecha->toDateString())
+            ->first();
+
+        if ($asistenciaExistente) {
+            return back()->withErrors(['error' => 'Ya existe un registro de asistencia para este horario y docente.']);
+        }
+
+        try {
+            // Registrar ausencia
+            Asistencia::create([
+                'fecha' => $fecha,
+                'hora' => $horario->horafin, // Usar hora de fin como referencia
+                'tipo' => 'Ausente',
+                'id_horario' => $request->id_horario,
+                'id_usuario' => $request->id_docente,
+            ]);
+
+            Bitacora::registrar(
+                'Registro de ausencia',
+                true,
+                'Ausencia marcada para docente ID: ' . $request->id_docente,
+                auth()->id()
+            );
+
+            return back()->with('success', 'Ausencia registrada correctamente para ' . $docente->nombre);
+        } catch (\Exception $e) {
+            Bitacora::registrar(
+                'Error al marcar ausencia',
+                false,
+                substr($e->getMessage(), 0, 120),
+                auth()->id()
+            );
+
+            return back()->withErrors(['error' => 'Error al registrar ausencia: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * CU15: Marcar múltiples ausencias de una vez
+     */
+    public function marcarAusenciasMasivas(Request $request)
+    {
+        $request->validate([
+            'ausencias' => 'required|array',
+            'ausencias.*.id_horario' => 'required|exists:horario,id',
+            'ausencias.*.id_docente' => 'required|exists:usuario,id',
+            'ausencias.*.fecha' => 'required|date',
+        ]);
+
+        $registradas = 0;
+        $errores = 0;
+
+        DB::beginTransaction();
+        try {
+            foreach ($request->ausencias as $ausencia) {
+                $fecha = Carbon::parse($ausencia['fecha']);
+                
+                // Verificar que no exista
+                $existe = Asistencia::where('id_horario', $ausencia['id_horario'])
+                    ->where('id_usuario', $ausencia['id_docente'])
+                    ->whereDate('fecha', $fecha->toDateString())
+                    ->exists();
+
+                if (!$existe) {
+                    $horario = Horario::find($ausencia['id_horario']);
+                    
+                    Asistencia::create([
+                        'fecha' => $fecha,
+                        'hora' => $horario->horafin,
+                        'tipo' => 'Ausente',
+                        'id_horario' => $ausencia['id_horario'],
+                        'id_usuario' => $ausencia['id_docente'],
+                    ]);
+                    
+                    $registradas++;
+                } else {
+                    $errores++;
+                }
+            }
+
+            DB::commit();
+
+            Bitacora::registrar(
+                'Registro masivo de ausencias',
+                true,
+                $registradas . ' ausencias registradas',
+                auth()->id()
+            );
+
+            return back()->with('success', "Se registraron {$registradas} ausencias correctamente." . 
+                ($errores > 0 ? " {$errores} ya existían." : ""));
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            Bitacora::registrar(
+                'Error en registro masivo',
+                false,
+                substr($e->getMessage(), 0, 120),
+                auth()->id()
+            );
+
+            return back()->withErrors(['error' => 'Error al registrar ausencias: ' . $e->getMessage()]);
+        }
+    }
 }
