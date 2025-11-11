@@ -199,6 +199,10 @@
                                                                     data-dia="{{ $dia->id }}">
                                                                 <option value="">Seleccione horario primero</option>
                                                             </select>
+                                                            <!-- Campo oculto para preservar aula seleccionada después de error -->
+                                                            <input type="hidden" 
+                                                                   name="nroaula_old_{{ $dia->id }}" 
+                                                                   value="{{ old('nroaula.'.$dia->id) }}">
                                                             <div id="info_aula_{{ $dia->id }}" class="mt-1" style="font-size: 0.75rem; display: none;">
                                                                 <!-- Información detallada del aula seleccionada -->
                                                             </div>
@@ -556,6 +560,49 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    // ===== RESTAURAR DISPONIBILIDAD DE AULAS DESPUÉS DE ERROR =====
+    // Si la página se recargó con datos previos (error de validación),
+    // necesitamos volver a cargar las aulas disponibles
+    @if(old('dias_seleccionados'))
+        const diasSeleccionados = @json(old('dias_seleccionados', []));
+        
+        // Esperar un momento para que el DOM esté completamente cargado
+        setTimeout(function() {
+            diasSeleccionados.forEach(async function(diaId) {
+                const horaIni = document.getElementById('horaini_' + diaId);
+                const horaFin = document.getElementById('horafin_' + diaId);
+                const oldAulaInput = document.querySelector(`input[name="nroaula_old_${diaId}"]`);
+                
+                // Si hay horas definidas, verificar disponibilidad
+                if (horaIni && horaFin && horaIni.value && horaFin.value) {
+                    try {
+                        // Llamar a la función de verificación y esperar a que termine
+                        await verificarDisponibilidadAulas(diaId);
+                        
+                        // Después de cargar las aulas, restaurar la selección previa si existe
+                        if (oldAulaInput && oldAulaInput.value) {
+                            const selectAula = document.getElementById('nroaula_' + diaId);
+                            const oldAulaValue = oldAulaInput.value;
+                            
+                            if (selectAula) {
+                                // Buscar si la opción existe en el select
+                                const option = Array.from(selectAula.options).find(opt => opt.value == oldAulaValue);
+                                if (option && !option.disabled) {
+                                    selectAula.value = oldAulaValue;
+                                    console.log(`Aula ${oldAulaValue} restaurada para día ${diaId}`);
+                                } else if (option && option.disabled) {
+                                    console.warn(`Aula ${oldAulaValue} ya no está disponible para día ${diaId}`);
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.error(`Error al restaurar disponibilidad para día ${diaId}:`, error);
+                    }
+                }
+            });
+        }, 300); // 300ms de delay para asegurar que todo esté listo
+    @endif
 });
 </script>
 @endsection

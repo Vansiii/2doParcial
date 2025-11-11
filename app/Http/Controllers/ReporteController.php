@@ -72,11 +72,19 @@ class ReporteController extends Controller
 
         if ($idDocente) {
             // Filtrar por docente usando grupo_materia
+            // Debe filtrar tanto por grupo como por materia que el docente dicta
             $query->where(function($q) use ($idDocente) {
-                $q->whereIn('id_grupo', function($subQuery) use ($idDocente) {
-                    $subQuery->select('id_grupo')
+                $q->whereExists(function($subQuery) use ($idDocente) {
+                    $subQuery->select(DB::raw(1))
                         ->from('grupo_materia')
-                        ->where('id_docente', $idDocente);
+                        ->whereColumn('grupo_materia.id_grupo', 'horario.id_grupo')
+                        ->where('grupo_materia.id_docente', $idDocente)
+                        ->whereExists(function($materiaQuery) {
+                            $materiaQuery->select(DB::raw(1))
+                                ->from('horario_mat')
+                                ->whereColumn('horario_mat.id_horario', 'horario.id')
+                                ->whereColumn('horario_mat.sigla_materia', 'grupo_materia.sigla_materia');
+                        });
                 });
             });
         }
@@ -362,8 +370,8 @@ class ReporteController extends Controller
 
         // Construir consulta
         $query = Asistencia::with([
-            'horario.grupo.docentes',
-            'horario.grupo.materias',
+            'horario.grupo.periodo',
+            'horario.materias',
             'horario.aula',
             'usuario'
         ]);
@@ -478,8 +486,8 @@ class ReporteController extends Controller
             $data = [];
             foreach ($asistencias as $asistencia) {
                 $docenteNombre = $asistencia->usuario->nombre ?? 'N/A';
-                $materiaNombre = ($asistencia->horario->grupo && $asistencia->horario->grupo->materias->isNotEmpty()) 
-                    ? $asistencia->horario->grupo->materias->first()->nombre 
+                $materiaNombre = ($asistencia->horario && $asistencia->horario->materias->isNotEmpty()) 
+                    ? $asistencia->horario->materias->first()->nombre 
                     : 'N/A';
                 
                 $tipoDisplay = $asistencia->tipo;
@@ -520,7 +528,7 @@ class ReporteController extends Controller
         $aulas = Aula::orderBy('nroaula')->get();
 
         // Obtener horarios
-        $horariosQuery = Horario::with(['grupo.docentes', 'grupo.materias', 'aula', 'dias']);
+        $horariosQuery = Horario::with(['grupo.periodo', 'materias', 'aula', 'dias']);
 
         if ($idDia) {
             $horariosQuery->whereHas('dias', function ($q) use ($idDia) {

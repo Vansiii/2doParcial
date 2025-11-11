@@ -183,6 +183,7 @@ class HorarioController extends Controller
                 // ===== VALIDACIÓN DE CONFLICTOS =====
                 
                 // 1. Conflicto de AULA (misma aula, mismo día, horas que se cruzan)
+                // Este es el conflicto MÁS IMPORTANTE: 2 clases no pueden usar la misma aula al mismo tiempo
                 $conflictoAula = Horario::where('nroaula', $nroAula)
                     ->whereHas('dias', function($q) use ($diaId) {
                         $q->where('dia.id', $diaId);
@@ -216,37 +217,8 @@ class HorarioController extends Controller
                     );
                 }
 
-                // 2. Conflicto de GRUPO (mismo grupo, mismo día, horas que se cruzan)
-                $conflictoGrupo = Horario::where('id_grupo', $request->id_grupo)
-                    ->whereHas('dias', function($q) use ($diaId) {
-                        $q->where('dia.id', $diaId);
-                    })
-                    ->where(function($query) use ($horaIni, $horaFin) {
-                        $query->where(function($q) use ($horaIni, $horaFin) {
-                            $q->where('horaini', '<=', $horaIni)
-                              ->where('horafin', '>', $horaIni);
-                        })->orWhere(function($q) use ($horaIni, $horaFin) {
-                            $q->where('horaini', '<', $horaFin)
-                              ->where('horafin', '>=', $horaFin);
-                        })->orWhere(function($q) use ($horaIni, $horaFin) {
-                            $q->where('horaini', '>=', $horaIni)
-                              ->where('horafin', '<=', $horaFin);
-                        });
-                    })
-                    ->with(['materias', 'aula'])
-                    ->first();
-
-                if ($conflictoGrupo) {
-                    $dia = Dia::find($diaId);
-                    $materiaConflicto = $conflictoGrupo->materias->first();
-                    throw new \Exception(
-                        "CONFLICTO DE GRUPO: El grupo {$grupo->sigla} ya tiene clase el {$dia->descripcion} " .
-                        "de {$conflictoGrupo->horaini} a {$conflictoGrupo->horafin} " .
-                        "({$materiaConflicto->nombre} en aula {$conflictoGrupo->nroaula})"
-                    );
-                }
-
-                // 3. Conflicto de DOCENTE (mismo docente, mismo día, horas que se cruzan)
+                // 2. Conflicto de DOCENTE (mismo docente, mismo día, horas que se cruzan)
+                // Un docente no puede dar 2 clases al mismo tiempo
                 // Obtener el docente asignado a esta combinación grupo-materia
                 $grupoMateria = \App\Models\GrupoMateria::where('id_grupo', $request->id_grupo)
                     ->where('sigla_materia', $request->sigla_materia)
