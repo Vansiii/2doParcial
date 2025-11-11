@@ -101,13 +101,25 @@ class AsistenciaController extends Controller
         $diaSemana = ucfirst($hoy->locale('es')->dayName);
 
         // Obtener horarios del docente para hoy
+        // Lógica: Horario -> Grupo -> Grupo_Materia -> Docente
         $horariosHoy = Horario::with(['grupo', 'aula', 'dias', 'materias'])
             ->whereHas('dias', function($query) use ($diaSemana) {
                 $query->where('descripcion', $diaSemana);
             })
-            ->whereHas('materias.grupoMaterias', function($query) use ($usuario) {
-                $query->where('id_docente', $usuario->id);
+            ->where(function($query) use ($usuario) {
+                // El horario debe tener una materia que esté asignada al docente en ese grupo
+                $query->whereIn('id', function($subquery) use ($usuario) {
+                    $subquery->select('horario.id')
+                        ->from('horario')
+                        ->join('horario_mat', 'horario.id', '=', 'horario_mat.id_horario')
+                        ->join('grupo_materia', function($join) {
+                            $join->on('horario_mat.sigla_materia', '=', 'grupo_materia.sigla_materia')
+                                 ->on('horario.id_grupo', '=', 'grupo_materia.id_grupo');
+                        })
+                        ->where('grupo_materia.id_docente', $usuario->id);
+                });
             })
+            ->orderBy('horaini')
             ->get();
 
         // Verificar cuáles ya tienen asistencia marcada hoy

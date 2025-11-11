@@ -2,47 +2,106 @@
 
 @section('styles')
 <style>
-    .schedule-grid {
-        display: grid;
-        grid-template-columns: 100px repeat(7, 1fr);
-        gap: 2px;
-        background-color: #dee2e6;
-        padding: 2px;
-    }
-    .schedule-header {
-        background-color: #1cc88a;
-        color: white;
-        padding: 12px;
-        text-align: center;
-        font-weight: bold;
-        font-size: 0.9rem;
-    }
-    .schedule-cell {
-        background-color: white;
-        padding: 8px;
-        min-height: 80px;
+    .horario-table {
+        width: 100%;
+        border-collapse: collapse;
         font-size: 0.85rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    .schedule-time {
-        background-color: #f8f9fa;
-        padding: 12px;
+    .horario-table th {
+        background: linear-gradient(135deg, #c8e6c9 0%, #a5d6a7 100%);
+        color: #2e7d32;
+        padding: 12px 8px;
         text-align: center;
+        font-weight: 700;
+        border: 1px solid #a5d6a7;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    .horario-table th:first-child {
+        background: linear-gradient(135deg, #e0e0e0 0%, #bdbdbd 100%);
+        color: #424242;
+    }
+    .horario-table td {
+        border: 1px solid #e0e0e0;
+        padding: 0;
+        text-align: center;
+        vertical-align: middle;
+        min-width: 120px;
+        height: 50px;
+    }
+    .horario-table td:first-child {
+        background-color: #f5f5f5;
         font-weight: 600;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .schedule-item {
-        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-        color: white;
+        color: #616161;
+        white-space: nowrap;
         padding: 8px;
-        border-radius: 6px;
-        margin-bottom: 4px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
+    .horario-block {
+        padding: 6px 8px;
+        border-radius: 4px;
+        font-weight: 600;
+        color: #212529;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        line-height: 1.3;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .horario-block:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        cursor: pointer;
+    }
+    .horario-materia {
+        font-size: 0.9rem;
+        font-weight: 700;
+    }
+    .horario-aula {
+        font-size: 0.75rem;
+        margin-top: 2px;
+        opacity: 0.9;
+    }
+    
+    /* Colores distintivos por tipo de materia */
+    .color-1 { background-color: #a8e6cf; } /* Verde claro */
+    .color-2 { background-color: #ffd3b6; } /* Naranja claro */
+    .color-3 { background-color: #ffaaa5; } /* Rojo claro */
+    .color-4 { background-color: #ff8b94; } /* Rosa salmón */
+    .color-5 { background-color: #dda0dd; } /* Ciruela */
+    .color-6 { background-color: #98d8c8; } /* Turquesa */
+    .color-7 { background-color: #f7dc6f; } /* Amarillo */
+    .color-8 { background-color: #bb8fce; } /* Morado claro */
+    .color-9 { background-color: #85c1e2; } /* Azul cielo */
+    .color-10 { background-color: #f8b4d9; } /* Rosa */
+    
+    @media print {
+        .no-print { display: none !important; }
+        .sidebar { display: none !important; }
+        #sidebar { display: none !important; }
+        .main-content { margin-left: 0 !important; padding-left: 0 !important; }
+        .container-fluid { padding: 0 !important; }
+        .horario-table { page-break-inside: avoid; }
+        .card { box-shadow: none !important; border: 1px solid #dee2e6 !important; }
+        body { padding: 0 !important; margin: 0 !important; }
+    }
+    
     @media (max-width: 768px) {
-        .schedule-grid {
-            grid-template-columns: 80px repeat(3, 1fr);
+        .horario-table {
+            font-size: 0.7rem;
+        }
+        .horario-table td {
+            min-width: 80px;
+            height: 45px;
+        }
+        .horario-materia {
+            font-size: 0.75rem;
+        }
+        .horario-aula {
+            font-size: 0.65rem;
         }
     }
 </style>
@@ -211,71 +270,158 @@
 
                             <!-- Vista de calendario semanal -->
                             <div class="card">
-                                <div class="card-header bg-primary text-white">
+                                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                                     <h6 class="mb-0">
-                                        <i class="fas fa-calendar-week me-2"></i>Vista Semanal
+                                        <i class="fas fa-calendar-week me-2"></i>Horario Semanal - Grupo {{ $grupoSeleccionado->sigla }}
                                     </h6>
+                                    <button class="btn btn-light btn-sm no-print" onclick="window.print()">
+                                        <i class="fas fa-print me-1"></i>Imprimir
+                                    </button>
                                 </div>
-                                <div class="card-body p-2">
-                                    <div class="schedule-grid">
-                                        <div class="schedule-header">Hora</div>
-                                        <div class="schedule-header">Lunes</div>
-                                        <div class="schedule-header">Martes</div>
-                                        <div class="schedule-header">Miércoles</div>
-                                        <div class="schedule-header">Jueves</div>
-                                        <div class="schedule-header">Viernes</div>
-                                        <div class="schedule-header">Sábado</div>
-                                        <div class="schedule-header">Domingo</div>
-
-                                        @php
-                                            $horaInicio = 7;
-                                            $horaFin = 21;
-                                            $diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-                                        @endphp
-
-                                        @for($hora = $horaInicio; $hora < $horaFin; $hora++)
-                                            <div class="schedule-time">
-                                                {{ sprintf('%02d:00', $hora) }}
-                                            </div>
-                                            @foreach($diasSemana as $nombreDia)
-                                                <div class="schedule-cell">
-                                                    @foreach($horarios as $horario)
-                                                        @php
-                                                            $horaIni = (int)\Carbon\Carbon::parse($horario->horaini)->format('H');
-                                                            $horaFi = (int)\Carbon\Carbon::parse($horario->horafin)->format('H');
-                                                            $tieneDia = $horario->dias->contains('nombre', $nombreDia);
-                                                        @endphp
-                                                        @if($tieneDia && $hora >= $horaIni && $hora < $horaFi)
-                                                            @if($hora == $horaIni)
-                                                                @php
-                                                                    // Obtener docente de grupo_materia
-                                                                    $materia = $horario->materias->first();
-                                                                    $docenteHorario = null;
-                                                                    if ($materia && $grupoSeleccionado) {
-                                                                        $gm = \App\Models\GrupoMateria::where('id_grupo', $grupoSeleccionado->id)
-                                                                            ->where('sigla_materia', $materia->sigla)
-                                                                            ->first();
-                                                                        $docenteHorario = $gm ? $gm->docente : null;
-                                                                    }
-                                                                @endphp
-                                                                <div class="schedule-item">
-                                                                    <div><strong>{{ $materia->sigla ?? '' }}</strong></div>
-                                                                    <div class="small">{{ $horario->aula->nroaula ?? '' }}</div>
-                                                                    @if($docenteHorario)
-                                                                        <div class="small">{{ $docenteHorario->nombre }}</div>
-                                                                    @endif
-                                                                    <div class="small">
-                                                                        {{ \Carbon\Carbon::parse($horario->horaini)->format('H:i') }} - 
-                                                                        {{ \Carbon\Carbon::parse($horario->horafin)->format('H:i') }}
-                                                                    </div>
-                                                                </div>
-                                                            @endif
-                                                        @endif
+                                <div class="card-body p-3">
+                                    @php
+                                        $diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+                                        $diasAbrev = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
+                                        
+                                        // Crear intervalos de 45 minutos desde las 7:00 hasta las 23:00
+                                        $intervalos = [];
+                                        $horaInicio = 7 * 60; // 7:00 en minutos
+                                        $horaFin = 23 * 60; // 23:00 en minutos
+                                        
+                                        for ($minutos = $horaInicio; $minutos < $horaFin; $minutos += 45) {
+                                            $horaIni = sprintf('%02d:%02d', floor($minutos / 60), $minutos % 60);
+                                            $horaFinIntervalo = $minutos + 45;
+                                            $horaFinStr = sprintf('%02d:%02d', floor($horaFinIntervalo / 60), $horaFinIntervalo % 60);
+                                            
+                                            // Solo agregar si hay algún horario en este intervalo
+                                            foreach($horarios as $horario) {
+                                                $horarioIni = \Carbon\Carbon::parse($horario->horaini);
+                                                $horarioFin = \Carbon\Carbon::parse($horario->horafin);
+                                                $horarioIniMinutos = $horarioIni->hour * 60 + $horarioIni->minute;
+                                                $horarioFinMinutos = $horarioFin->hour * 60 + $horarioFin->minute;
+                                                
+                                                // Verificar si el horario se solapa con este intervalo
+                                                if ($horarioIniMinutos < $horaFinIntervalo && $horarioFinMinutos > $minutos) {
+                                                    $intervalo = $horaIni . ' - ' . $horaFinStr;
+                                                    if (!isset($intervalos[$intervalo])) {
+                                                        $intervalos[$intervalo] = [
+                                                            'inicio' => $horaIni,
+                                                            'fin' => $horaFinStr,
+                                                            'minutos_inicio' => $minutos,
+                                                            'minutos_fin' => $horaFinIntervalo
+                                                        ];
+                                                    }
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        
+                                        // Asignar colores únicos a cada materia
+                                        $materiasColores = [];
+                                        $colorIndex = 1;
+                                        foreach($horarios as $horario) {
+                                            $materia = $horario->materias->first();
+                                            if ($materia && !isset($materiasColores[$materia->sigla])) {
+                                                $materiasColores[$materia->sigla] = 'color-' . $colorIndex;
+                                                $colorIndex = ($colorIndex % 10) + 1;
+                                            }
+                                        }
+                                    @endphp
+                                    
+                                    <div class="table-responsive">
+                                        <table class="horario-table">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width: 120px;">HORARIO</th>
+                                                    @foreach($diasAbrev as $dia)
+                                                        <th>{{ $dia }}</th>
                                                     @endforeach
-                                                </div>
-                                            @endforeach
-                                        @endfor
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach($intervalos as $intervaloKey => $intervaloData)
+                                                    <tr>
+                                                        <td>{{ $intervaloKey }}</td>
+                                                        @foreach($diasSemana as $nombreDia)
+                                                            <td>
+                                                @php
+                                                    $horarioEncontrado = null;
+                                                    foreach($horarios as $horario) {
+                                                        $tieneDia = $horario->dias->contains('nombre', $nombreDia);
+                                                        
+                                                        if ($tieneDia) {
+                                                            $horarioIni = \Carbon\Carbon::parse($horario->horaini);
+                                                            $horarioFin = \Carbon\Carbon::parse($horario->horafin);
+                                                            $horarioIniMinutos = $horarioIni->hour * 60 + $horarioIni->minute;
+                                                            $horarioFinMinutos = $horarioFin->hour * 60 + $horarioFin->minute;
+                                                            
+                                                            // Verificar si el horario se solapa con este intervalo
+                                                            if ($horarioIniMinutos <= $intervaloData['minutos_inicio'] && 
+                                                                $horarioFinMinutos >= $intervaloData['minutos_fin']) {
+                                                                $horarioEncontrado = $horario;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                @endphp                                                                @if($horarioEncontrado)
+                                                                    @php
+                                                                        $materia = $horarioEncontrado->materias->first();
+                                                                        $aula = $horarioEncontrado->aula;
+                                                                        $modulo = $aula && $aula->modulo ? $aula->modulo->codigo : '';
+                                                                        $colorClass = $materia ? ($materiasColores[$materia->sigla] ?? 'color-1') : 'color-1';
+                                                                    @endphp
+                                                                    
+                                                                    <div class="horario-block {{ $colorClass }}" 
+                                                                         title="Docente: {{ $horarioEncontrado->materias->first() ? 
+                                                                            (\App\Models\GrupoMateria::where('id_grupo', $grupoSeleccionado->id)
+                                                                                ->where('sigla_materia', $horarioEncontrado->materias->first()->sigla)
+                                                                                ->first()?->docente?->nombre ?? 'Sin asignar') : 'Sin asignar' }}">
+                                                                        <div class="horario-materia">
+                                                                            {{ $materia ? $materia->sigla : '' }}
+                                                                        </div>
+                                                                        <div class="horario-aula">
+                                                                            {{ $modulo ? $modulo . '-' : '' }}{{ $aula ? $aula->nroaula : '' }}
+                                                                        </div>
+                                                                    </div>
+                                                                @endif
+                                                            </td>
+                                                        @endforeach
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
                                     </div>
+                                    
+                                    <!-- Leyenda de materias -->
+                                    @if(count($materiasColores) > 0)
+                                        <div class="mt-3 p-3 bg-light rounded">
+                                            <h6 class="mb-2"><i class="fas fa-info-circle me-2"></i>Leyenda de Materias</h6>
+                                            <div class="row">
+                                                @foreach($materiasColores as $siglaMateria => $colorClass)
+                                                    @php
+                                                        $materiaInfo = \App\Models\Materia::where('sigla', $siglaMateria)->first();
+                                                        $gm = \App\Models\GrupoMateria::where('id_grupo', $grupoSeleccionado->id)
+                                                            ->where('sigla_materia', $siglaMateria)
+                                                            ->first();
+                                                        $docenteNombre = $gm?->docente?->nombre ?? 'Sin docente asignado';
+                                                    @endphp
+                                                    <div class="col-md-4 col-sm-6 mb-2">
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="horario-block {{ $colorClass }}" style="width: 60px; height: 50px; min-height: 50px; margin-right: 10px; flex-shrink: 0;">
+                                                                <div class="horario-materia" style="font-size: 0.85rem;">{{ $siglaMateria }}</div>
+                                                            </div>
+                                                            <div style="flex: 1;">
+                                                                <strong>{{ $materiaInfo?->nombre ?? $siglaMateria }}</strong><br>
+                                                                <small class="text-muted">
+                                                                    <i class="fas fa-user-tie"></i> {{ $docenteNombre }}
+                                                                </small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         @else
@@ -295,4 +441,17 @@
         </div>
     </div>
 </div>
+
+<script>
+// Mejorar la función de impresión
+window.addEventListener('beforeprint', function() {
+    document.querySelector('.sidebar')?.classList.add('d-none');
+    document.querySelector('.main-content')?.style.setProperty('margin-left', '0', 'important');
+});
+
+window.addEventListener('afterprint', function() {
+    document.querySelector('.sidebar')?.classList.remove('d-none');
+    document.querySelector('.main-content')?.style.removeProperty('margin-left');
+});
+</script>
 @endsection

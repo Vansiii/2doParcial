@@ -96,6 +96,23 @@
         .border-left-secondary {
             border-left: 0.25rem solid #858796 !important;
         }
+        
+        /* Estilos para impresión */
+        @media print {
+            .sidebar {
+                display: none !important;
+            }
+            .main-content {
+                margin-left: 0 !important;
+                width: 100% !important;
+            }
+            .navbar {
+                display: none !important;
+            }
+            body {
+                background-color: white !important;
+            }
+        }
     </style>
     
     @yield('styles')
@@ -136,6 +153,10 @@
                 
                 <a class="nav-link {{ request()->routeIs('carga-masiva.*') ? 'active' : '' }}" href="{{ route('carga-masiva.index') }}">
                     <i class="fas fa-database"></i> Carga Masiva de Datos
+                </a>
+                
+                <a class="nav-link {{ request()->routeIs('bitacora.*') ? 'active' : '' }}" href="{{ route('bitacora.index') }}">
+                    <i class="fas fa-history"></i> Bitácora del Sistema
                 </a>
                 @endif
 

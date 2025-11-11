@@ -65,6 +65,12 @@ Route::middleware('auth')->group(function () {
         Route::get('carga-masiva/horarios', [App\Http\Controllers\CargaMasivaHorarioController::class, 'index'])->name('carga-masiva.horarios');
         Route::post('carga-masiva/horarios', [App\Http\Controllers\CargaMasivaHorarioController::class, 'store'])->name('carga-masiva.horarios.store');
         Route::get('carga-masiva/horarios/plantilla', [App\Http\Controllers\CargaMasivaHorarioController::class, 'descargarPlantilla'])->name('carga-masiva.horarios.plantilla');
+        
+        // Bitácora del Sistema (solo Administrador)
+        Route::get('bitacora', [App\Http\Controllers\BitacoraController::class, 'index'])->name('bitacora.index');
+        Route::get('bitacora/obtener-nuevos', [App\Http\Controllers\BitacoraController::class, 'obtenerNuevos'])->name('bitacora.obtener-nuevos');
+        Route::post('bitacora/limpiar', [App\Http\Controllers\BitacoraController::class, 'limpiar'])->name('bitacora.limpiar');
+        Route::get('bitacora/exportar', [App\Http\Controllers\BitacoraController::class, 'exportar'])->name('bitacora.exportar');
     });
 
     // CU04 y CU05: Gestión de Docentes (solo Administrador y Coordinador)
