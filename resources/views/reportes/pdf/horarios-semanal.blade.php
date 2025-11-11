@@ -123,22 +123,39 @@
                         <tr>
                             <td>{{ $horario->horaini }} - {{ $horario->horafin }}</td>
                             <td>
-                                @if($horario->grupo && $horario->grupo->docentes->isNotEmpty())
-                                    {{ $horario->grupo->docentes->first()->nombre }}
-                                @else
-                                    N/A
-                                @endif
+                                @php
+                                    // Obtener el docente correcto desde grupo_materia
+                                    $materia = $horario->materias->first();
+                                    $docenteNombre = 'N/A';
+                                    if ($materia && $horario->grupo) {
+                                        $gm = DB::table('grupo_materia')
+                                            ->where('id_grupo', $horario->grupo->id)
+                                            ->where('sigla_materia', $materia->sigla)
+                                            ->first();
+                                        if ($gm) {
+                                            $docenteObj = \App\Models\Usuario::find($gm->id_docente);
+                                            $docenteNombre = $docenteObj ? $docenteObj->nombre : 'N/A';
+                                        }
+                                    }
+                                @endphp
+                                {{ $docenteNombre }}
                             </td>
                             <td>{{ $horario->grupo->sigla ?? 'N/A' }}</td>
                             <td>
-                                @if($horario->grupo && $horario->grupo->materias->isNotEmpty())
-                                    {{ $horario->grupo->materias->first()->nombre }}
+                                @if($horario->materias->isNotEmpty())
+                                    {{ $horario->materias->first()->nombre }}
                                 @else
                                     N/A
                                 @endif
                             </td>
                             <td>{{ $horario->aula->nroaula ?? 'N/A' }}</td>
-                            <td>N/A</td>
+                            <td>
+                                @if($horario->grupo && $horario->grupo->periodo)
+                                    {{ $horario->grupo->periodo->gestion }}/{{ $horario->grupo->periodo->periodo }}
+                                @else
+                                    N/A
+                                @endif
+                            </td>
                         </tr>
                         @endforeach
                     </tbody>

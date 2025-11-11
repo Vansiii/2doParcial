@@ -14,6 +14,7 @@ use App\Models\Justificacion;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Rap2hpoutre\FastExcel\FastExcel;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\DB;
 
 class ReporteController extends Controller
 {
@@ -59,8 +60,7 @@ class ReporteController extends Controller
 
         // Construir consulta
         $query = Horario::with([
-            'grupo.docentes',
-            'grupo.materias',
+            'grupo.periodo',
             'aula',
             'dias',
             'materias'
@@ -71,8 +71,13 @@ class ReporteController extends Controller
         }
 
         if ($idDocente) {
-            $query->whereHas('grupo.docentes', function($q) use ($idDocente) {
-                $q->where('usuario.id', $idDocente);
+            // Filtrar por docente usando grupo_materia
+            $query->where(function($q) use ($idDocente) {
+                $q->whereIn('id_grupo', function($subQuery) use ($idDocente) {
+                    $subQuery->select('id_grupo')
+                        ->from('grupo_materia')
+                        ->where('id_docente', $idDocente);
+                });
             });
         }
 
@@ -113,13 +118,26 @@ class ReporteController extends Controller
             $data = [];
             foreach ($horariosPorDia as $nombreDia => $horarios) {
                 foreach ($horarios as $horario) {
-                    $docenteNombre = ($horario->grupo && $horario->grupo->docentes->isNotEmpty()) 
-                        ? $horario->grupo->docentes->first()->nombre 
-                        : 'N/A';
+                    // Obtener el docente correcto desde grupo_materia
+                    $materia = $horario->materias->first();
+                    $docenteNombre = 'N/A';
+                    if ($materia && $horario->grupo) {
+                        $gm = \DB::table('grupo_materia')
+                            ->where('id_grupo', $horario->grupo->id)
+                            ->where('sigla_materia', $materia->sigla)
+                            ->first();
+                        if ($gm) {
+                            $docenteObj = Usuario::find($gm->id_docente);
+                            $docenteNombre = $docenteObj ? $docenteObj->nombre : 'N/A';
+                        }
+                    }
                     
-                    $materiaNombre = ($horario->grupo && $horario->grupo->materias->isNotEmpty()) 
-                        ? $horario->grupo->materias->first()->nombre 
-                        : 'N/A';
+                    $materiaNombre = $materia ? $materia->nombre : 'N/A';
+                    
+                    $periodo = 'N/A';
+                    if ($horario->grupo && $horario->grupo->periodo) {
+                        $periodo = $horario->grupo->periodo->gestion . '/' . $horario->grupo->periodo->periodo;
+                    }
                     
                     $data[] = [
                         'Día' => $nombreDia,
@@ -128,6 +146,7 @@ class ReporteController extends Controller
                         'Grupo' => $horario->grupo->sigla ?? 'N/A',
                         'Materia' => $materiaNombre,
                         'Aula' => $horario->aula->nroaula ?? 'N/A',
+                        'Semestre' => $periodo,
                     ];
                 }
             }
@@ -167,23 +186,44 @@ class ReporteController extends Controller
             $totalPeriodos = 0;
             $materias = [];
             
-            // Obtener horarios donde este docente está asignado a través de grupo_materia
-            $horarios = Horario::whereHas('grupo.docentes', function($q) use ($docente) {
-                $q->where('usuario.id', $docente->id);
-            })->with(['grupo.materias', 'dias', 'aula.modulo'])->get();
-
-            foreach ($horarios as $horario) {
-                // Contar períodos (cada día que trabaja)
-                $diasTrabajados = $horario->dias->count();
-                $totalPeriodos += $diasTrabajados;
-
-                // Agrupar por materia
-                foreach ($horario->grupo->materias as $materia) {
-                    $nombreMateria = $materia->nombre;
-                    if (!isset($materias[$nombreMateria])) {
-                        $materias[$nombreMateria] = 0;
+            // Obtener asignaciones de grupo_materia para este docente
+            $asignaciones = DB::table('grupo_materia')
+                ->where('id_docente', $docente->id)
+                ->get();
+            
+            $horariosDocente = collect();
+            
+            foreach ($asignaciones as $asignacion) {
+                // Obtener horarios de esta materia en este grupo
+                $horarios = Horario::where('id_grupo', $asignacion->id_grupo)
+                    ->whereHas('materias', function($q) use ($asignacion) {
+                        $q->where('materia.sigla', $asignacion->sigla_materia);
+                    })
+                    ->with(['materias', 'dias', 'aula.modulo', 'grupo'])
+                    ->get();
+                
+                foreach ($horarios as $horario) {
+                    // Verificar que sea la materia correcta
+                    $materiasHorario = $horario->materias->where('sigla', $asignacion->sigla_materia);
+                    
+                    if ($materiasHorario->count() > 0) {
+                        $horariosDocente->push($horario);
+                        
+                        // Contar períodos de 45 minutos
+                        $tiempoTotal = $horario->tiempoh ?? 0; // tiempo en minutos
+                        $periodos = ceil($tiempoTotal / 45); // cada período es 45 minutos
+                        $diasTrabajados = $horario->dias->count();
+                        
+                        $totalPeriodos += ($periodos * $diasTrabajados);
+                        
+                        // Agrupar por materia
+                        $materia = $materiasHorario->first();
+                        $nombreMateria = $materia->nombre;
+                        if (!isset($materias[$nombreMateria])) {
+                            $materias[$nombreMateria] = 0;
+                        }
+                        $materias[$nombreMateria] += ($periodos * $diasTrabajados);
                     }
-                    $materias[$nombreMateria] += $diasTrabajados;
                 }
             }
 
@@ -191,7 +231,7 @@ class ReporteController extends Controller
                 'docente' => $docente,
                 'total_periodos' => $totalPeriodos,
                 'materias' => $materias,
-                'horarios' => $horarios,
+                'horarios' => $horariosDocente,
             ];
         }
 
@@ -698,7 +738,7 @@ class ReporteController extends Controller
 
     private function generarReporteHorarios($columnas, $idPeriodo = null)
     {
-        $query = Horario::with(['grupo.periodo', 'grupo.materias', 'grupo.docentes', 'aula', 'dias']);
+        $query = Horario::with(['grupo.periodo', 'materias', 'aula', 'dias']);
         
         if ($idPeriodo) {
             $query->whereHas('grupo', function($q) use ($idPeriodo) {
@@ -727,7 +767,20 @@ class ReporteController extends Controller
                         $row['Materia'] = $horario->materias->first()->nombre ?? 'N/A';
                         break;
                     case 'docente':
-                        $row['Docente'] = $horario->grupo->docentes->first()->nombre ?? 'N/A';
+                        // Obtener el docente correcto desde grupo_materia
+                        $materia = $horario->materias->first();
+                        $docente = 'N/A';
+                        if ($materia && $horario->grupo) {
+                            $gm = DB::table('grupo_materia')
+                                ->where('id_grupo', $horario->grupo->id)
+                                ->where('sigla_materia', $materia->sigla)
+                                ->first();
+                            if ($gm) {
+                                $docenteObj = Usuario::find($gm->id_docente);
+                                $docente = $docenteObj ? $docenteObj->nombre : 'N/A';
+                            }
+                        }
+                        $row['Docente'] = $docente;
                         break;
                     case 'aula':
                         $row['Aula'] = $horario->aula->nroaula ?? 'N/A';
