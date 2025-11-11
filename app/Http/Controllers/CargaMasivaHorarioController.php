@@ -266,16 +266,27 @@ class CargaMasivaHorarioController extends Controller
         }
         $datos['materia'] = $materia;
 
-        // Buscar docente por código
+        // Buscar docente por código (0 = Por Designar)
         $codigoDocente = trim($fila['cod_docente']);
-        $docente = Usuario::where('codigo', $codigoDocente)
-            ->whereHas('roles', function($q) {
-                $q->where('descripcion', 'Docente');
-            })
-            ->first();
-        if (!$docente) {
-            $errores[] = "Fila {$numeroFila}: No existe el docente con código '{$codigoDocente}'.";
+        
+        if ($codigoDocente == '0') {
+            // Buscar o crear usuario "Por Designar"
+            $docente = Usuario::where('codigo', 0)->first();
+            
+            if (!$docente) {
+                $errores[] = "Fila {$numeroFila}: No existe el usuario 'POR DESIGNAR' con código 0. Debe crearlo primero.";
+            }
+        } else {
+            $docente = Usuario::where('codigo', $codigoDocente)
+                ->whereHas('roles', function($q) {
+                    $q->where('descripcion', 'Docente');
+                })
+                ->first();
+            if (!$docente) {
+                $errores[] = "Fila {$numeroFila}: No existe el docente con código '{$codigoDocente}'.";
+            }
         }
+        
         $datos['docente'] = $docente;
 
         // Procesar cada día posible (hasta 4)
@@ -426,6 +437,23 @@ class CargaMasivaHorarioController extends Controller
                 'dia2' => 'Jue',
                 'horario2' => '9:15-11:30',
                 'local2' => '236-13',
+                'dia3' => '',
+                'horario3' => '',
+                'local3' => '',
+                'dia4' => '',
+                'horario4' => '',
+                'local4' => '',
+            ],
+            [
+                'sigla_grupo' => 'Z3',
+                'sigla_materia' => 'QMC100',
+                'cod_docente' => '0',
+                'dia1' => 'Mar',
+                'horario1' => '14:00-16:00',
+                'local1' => '236-20',
+                'dia2' => 'Jue',
+                'horario2' => '14:00-16:00',
+                'local2' => '236-20',
                 'dia3' => '',
                 'horario3' => '',
                 'local3' => '',
