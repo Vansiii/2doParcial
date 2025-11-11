@@ -6,6 +6,7 @@ use App\Models\Asistencia;
 use App\Models\Horario;
 use App\Models\Usuario;
 use App\Models\Bitacora;
+use App\Models\Justificacion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -326,24 +327,37 @@ class AsistenciaController extends Controller
             return back()->withErrors(['error' => 'Ya existe un registro de asistencia para este horario y docente.']);
         }
 
+        // Verificar si tiene justificación aprobada para esta fecha
+        $justificacion = Justificacion::where('id_usuario', $request->id_docente)
+            ->where('estado', 'Aprobada')
+            ->whereDate('fecha_inicio', '<=', $fecha)
+            ->whereDate('fecha_fin', '>=', $fecha)
+            ->first();
+
         try {
-            // Registrar ausencia
+            // Si tiene justificación aprobada, marcar como LICENCIA, sino como AUSENTE
+            $tipo = $justificacion ? 'Licencia' : 'Ausente';
+            
             Asistencia::create([
                 'fecha' => $fecha,
-                'hora' => $horario->horafin, // Usar hora de fin como referencia
-                'tipo' => 'Ausente',
+                'hora' => $horario->horafin,
+                'tipo' => $tipo,
                 'id_horario' => $request->id_horario,
                 'id_usuario' => $request->id_docente,
             ]);
 
+            $mensaje = $tipo == 'Licencia' 
+                ? 'Licencia registrada (justificación aprobada)' 
+                : 'Ausencia registrada';
+
             Bitacora::registrar(
-                'Registro de ausencia',
+                'Registro de ' . strtolower($tipo),
                 true,
-                'Ausencia marcada para docente ID: ' . $request->id_docente,
+                $mensaje . ' para docente ID: ' . $request->id_docente,
                 auth()->id()
             );
 
-            return back()->with('success', 'Ausencia registrada correctamente para ' . $docente->nombre);
+            return back()->with('success', $mensaje . ' correctamente para ' . $docente->nombre);
         } catch (\Exception $e) {
             Bitacora::registrar(
                 'Error al marcar ausencia',
@@ -385,10 +399,20 @@ class AsistenciaController extends Controller
                 if (!$existe) {
                     $horario = Horario::find($ausencia['id_horario']);
                     
+                    // Verificar si tiene justificación aprobada para esta fecha
+                    $justificacion = Justificacion::where('id_usuario', $ausencia['id_docente'])
+                        ->where('estado', 'Aprobada')
+                        ->whereDate('fecha_inicio', '<=', $fecha)
+                        ->whereDate('fecha_fin', '>=', $fecha)
+                        ->first();
+                    
+                    // Si tiene justificación aprobada, marcar como LICENCIA, sino como AUSENTE
+                    $tipo = $justificacion ? 'Licencia' : 'Ausente';
+                    
                     Asistencia::create([
                         'fecha' => $fecha,
                         'hora' => $horario->horafin,
-                        'tipo' => 'Ausente',
+                        'tipo' => $tipo,
                         'id_horario' => $ausencia['id_horario'],
                         'id_usuario' => $ausencia['id_docente'],
                     ]);

@@ -238,6 +238,12 @@
         <div class="no-data">No se encontraron registros de asistencia con los filtros aplicados</div>
     @endif
 
+    @if($asistencias->count() > 0)
+    <div style="margin-top: 20px; padding: 10px; background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 5px; font-size: 9px;">
+        <strong>Nota importante:</strong> Cuando un docente no marca asistencia y tiene una justificación aprobada, se registra automáticamente como <strong>Licencia</strong>. De lo contrario, se marca como <strong>Ausente</strong>.
+    </div>
+    @endif
+
     <div class="footer">
         Sistema de Gestión Académica - Página <span class="pagenum"></span>
     </div>

@@ -484,10 +484,8 @@ class ReporteController extends Controller
             $justificaciones = $justificacionesQuery->get();
         }
 
-        // NO modificar las asistencias existentes
-        // Las justificaciones NO cambian registros existentes, son información adicional
-        
-        // Calcular estadísticas SIMPLES basadas SOLO en registros existentes
+        // Calcular estadísticas basadas en los registros de asistencia
+        // Las licencias ya se marcan automáticamente cuando hay justificación aprobada
         $totalAsistencias = $asistencias->count();
         
         $presentes = $asistencias->filter(function($a) { 

@@ -70,7 +70,7 @@
             </span>
             @if(count($horariosSinAsistencia) > 0)
                 <button type="button" class="btn btn-warning btn-sm" onclick="marcarTodasAusencias()">
-                    <i class="fas fa-check-double me-1"></i>Marcar Todas como Ausentes
+                    <i class="fas fa-check-double me-1"></i>Marcar Todas Seleccionadas
                 </button>
             @endif
         </div>
@@ -79,7 +79,12 @@
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle me-2"></i>
                     Los siguientes docentes <strong>NO han marcado asistencia</strong> en sus horarios del día seleccionado.
-                    Puede marcarlos individualmente como ausentes o usar el botón para marcar todos a la vez.
+                    <br><br>
+                    <strong>Nota:</strong> El sistema verificará automáticamente si tienen justificación aprobada:
+                    <ul class="mb-0 mt-2">
+                        <li><strong>Con justificación aprobada</strong> → Se marca como <span class="badge bg-warning">Licencia</span></li>
+                        <li><strong>Sin justificación</strong> → Se marca como <span class="badge bg-danger">Ausente</span></li>
+                    </ul>
                 </div>
 
                 <form id="form-ausencias-masivas" method="POST" action="{{ route('asistencias.marcar-ausencias-masivas') }}">
@@ -140,13 +145,13 @@
                                         <form method="POST" 
                                               action="{{ route('asistencias.marcar-ausencia') }}" 
                                               style="display: inline;"
-                                              onsubmit="return confirm('¿Está seguro de marcar como AUSENTE a {{ $item['docente']->nombre }}?')">
+                                              onsubmit="return confirm('¿Confirma registrar ausencia/licencia para {{ $item['docente']->nombre }}?\n\nEl sistema verificará automáticamente si tiene justificación aprobada.')">
                                             @csrf
                                             <input type="hidden" name="id_horario" value="{{ $item['horario']->id }}">
                                             <input type="hidden" name="id_docente" value="{{ $item['docente']->id }}">
                                             <input type="hidden" name="fecha" value="{{ $item['fecha'] }}">
-                                            <button type="submit" class="btn btn-sm btn-danger">
-                                                <i class="fas fa-user-times me-1"></i>Ausente
+                                            <button type="submit" class="btn btn-sm btn-warning">
+                                                <i class="fas fa-check me-1"></i>Registrar
                                             </button>
                                         </form>
                                     </td>
@@ -159,8 +164,7 @@
 
                 <div class="alert alert-warning mt-3">
                     <i class="fas fa-exclamation-triangle me-2"></i>
-                    <strong>Nota:</strong> Al marcar como ausente, se creará un registro permanente en el sistema.
-                    Asegúrese de que el docente realmente no asistió antes de confirmar.
+                    <strong>Importante:</strong> Al registrar, el sistema verificará automáticamente si el docente tiene justificación aprobada para esa fecha. Si la tiene, se marcará como <strong>Licencia</strong>; de lo contrario, como <strong>Ausente</strong>.
                 </div>
             @else
                 <div class="alert alert-success">
