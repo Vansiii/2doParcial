@@ -120,6 +120,43 @@
             <div class="summary">
                 <p><strong>Total de Períodos:</strong> {{ $carga['total_periodos'] }}</p>
                 <p><strong>Número de Materias:</strong> {{ count($carga['materias']) }}</p>
+                <p><strong>Días Laborales:</strong> {{ $carga['dias_laborales'] }} día(s)</p>
+            </div>
+
+            <div class="summary" style="margin-top: 10px; border-left-color: #e67e22;">
+                <strong style="color: #e67e22;">Desglose de Horas:</strong>
+                <table style="width: 100%; margin-top: 5px; border: none;">
+                    <tr style="background: none;">
+                        <td style="border: none; padding: 3px;"><strong>Horas Programadas:</strong></td>
+                        <td style="border: none; padding: 3px;">{{ $carga['horas_programadas'] }} hrs</td>
+                        <td style="border: none; padding: 3px;"><strong>Horas Trabajadas:</strong></td>
+                        <td style="border: none; padding: 3px; color: #27ae60;">{{ $carga['horas_trabajadas'] }} hrs</td>
+                    </tr>
+                    <tr style="background: none;">
+                        <td style="border: none; padding: 3px;"><strong>Horas Extras:</strong></td>
+                        <td style="border: none; padding: 3px; color: #3498db;">{{ $carga['horas_extras'] }} hrs</td>
+                        <td style="border: none; padding: 3px;"><strong>Horas Ausencias:</strong></td>
+                        <td style="border: none; padding: 3px; color: #e74c3c;">{{ $carga['horas_ausencias'] }} hrs</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="summary" style="margin-top: 10px; border-left-color: #27ae60;">
+                <strong style="color: #27ae60;">Registro de Asistencias:</strong>
+                <table style="width: 100%; margin-top: 5px; border: none;">
+                    <tr style="background: none;">
+                        <td style="border: none; padding: 3px;"><strong>Puntuales:</strong></td>
+                        <td style="border: none; padding: 3px; color: #27ae60;">{{ $carga['asistencias_puntuales'] }}</td>
+                        <td style="border: none; padding: 3px;"><strong>Tardanzas:</strong></td>
+                        <td style="border: none; padding: 3px; color: #f39c12;">{{ $carga['tardanzas'] }}</td>
+                    </tr>
+                    <tr style="background: none;">
+                        <td style="border: none; padding: 3px;"><strong>Ausencias:</strong></td>
+                        <td style="border: none; padding: 3px; color: #e74c3c;">{{ $carga['ausencias'] }}</td>
+                        <td style="border: none; padding: 3px;"><strong>Licencias:</strong></td>
+                        <td style="border: none; padding: 3px; color: #9b59b6;">{{ $carga['licencias'] }}</td>
+                    </tr>
+                </table>
             </div>
 
             <div class="materias-list">
@@ -151,8 +188,8 @@
                                 <td>{{ $horario->horaini }} - {{ $horario->horafin }}</td>
                                 <td>{{ $horario->grupo->sigla ?? 'N/A' }}</td>
                                 <td>
-                                    @if($horario->grupo && $horario->grupo->materias->isNotEmpty())
-                                        {{ $horario->grupo->materias->first()->nombre }}
+                                    @if($horario->materias->isNotEmpty())
+                                        {{ $horario->materias->first()->nombre }}
                                     @else
                                         N/A
                                     @endif

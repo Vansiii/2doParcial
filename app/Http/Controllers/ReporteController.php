@@ -192,6 +192,7 @@ class ReporteController extends Controller
                 ->get();
             
             $horariosDocente = collect();
+            $diasLaboralesSet = collect();
             
             foreach ($asignaciones as $asignacion) {
                 // Obtener horarios de esta materia en este grupo
@@ -216,6 +217,11 @@ class ReporteController extends Controller
                         
                         $totalPeriodos += ($periodos * $diasTrabajados);
                         
+                        // Agregar días laborales únicos
+                        foreach ($horario->dias as $dia) {
+                            $diasLaboralesSet->push($dia->id);
+                        }
+                        
                         // Agrupar por materia
                         $materia = $materiasHorario->first();
                         $nombreMateria = $materia->nombre;
@@ -226,12 +232,69 @@ class ReporteController extends Controller
                     }
                 }
             }
+            
+            // Calcular días laborales únicos
+            $diasLaborales = $diasLaboralesSet->unique()->count();
+            
+            // Calcular horas trabajadas, ausencias y horas extras
+            // Horas programadas = total_periodos * 45 minutos / 60
+            $horasProgramadas = round(($totalPeriodos * 45) / 60, 2);
+            
+            // Obtener asistencias del docente (todas las fechas disponibles)
+            $asistencias = Asistencia::where('id_usuario', $docente->id)
+                ->with('horario.dias')
+                ->get();
+            
+            // Contar tipos de asistencia
+            $asistenciasPuntuales = $asistencias->filter(function($a) {
+                return strtolower(trim($a->tipo)) == 'puntual';
+            })->count();
+            
+            $ausencias = $asistencias->filter(function($a) {
+                return strtolower(trim($a->tipo)) == 'ausente';
+            })->count();
+            
+            $tardanzas = $asistencias->filter(function($a) {
+                return strtolower(trim($a->tipo)) == 'tardanza';
+            })->count();
+            
+            $licencias = $asistencias->filter(function($a) {
+                return strtolower(trim($a->tipo)) == 'licencia';
+            })->count();
+            
+            // Horas trabajadas efectivas (asumiendo que cada asistencia puntual = horario completo)
+            $horasTrabajadas = 0;
+            foreach ($asistencias as $asistencia) {
+                if (strtolower(trim($asistencia->tipo)) == 'puntual' || strtolower(trim($asistencia->tipo)) == 'tardanza') {
+                    $horario = $asistencia->horario;
+                    if ($horario && $horario->tiempoh) {
+                        $horasTrabajadas += $horario->tiempoh / 60; // convertir minutos a horas
+                    }
+                }
+            }
+            $horasTrabajadas = round($horasTrabajadas, 2);
+            
+            // Horas extras (si trabajó más de lo programado)
+            $horasExtras = max(0, $horasTrabajadas - $horasProgramadas);
+            
+            // Horas por ausencias (ausencias * promedio de horas por clase)
+            $promedioHorasPorClase = $totalPeriodos > 0 ? $horasProgramadas / $totalPeriodos : 0;
+            $horasAusencias = round($ausencias * $promedioHorasPorClase, 2);
 
             $cargaHoraria[] = [
                 'docente' => $docente,
                 'total_periodos' => $totalPeriodos,
                 'materias' => $materias,
                 'horarios' => $horariosDocente,
+                'dias_laborales' => $diasLaborales,
+                'horas_programadas' => $horasProgramadas,
+                'horas_trabajadas' => $horasTrabajadas,
+                'horas_extras' => $horasExtras,
+                'horas_ausencias' => $horasAusencias,
+                'asistencias_puntuales' => $asistenciasPuntuales,
+                'ausencias' => $ausencias,
+                'tardanzas' => $tardanzas,
+                'licencias' => $licencias,
             ];
         }
 
@@ -259,6 +322,15 @@ class ReporteController extends Controller
                 $data[] = [
                     'Docente' => $carga['docente']->nombre,
                     'Total Períodos' => $carga['total_periodos'],
+                    'Días Laborales' => $carga['dias_laborales'],
+                    'Horas Programadas' => $carga['horas_programadas'],
+                    'Horas Trabajadas' => $carga['horas_trabajadas'],
+                    'Horas Extras' => $carga['horas_extras'],
+                    'Horas Ausencias' => $carga['horas_ausencias'],
+                    'Asistencias Puntuales' => $carga['asistencias_puntuales'],
+                    'Tardanzas' => $carga['tardanzas'],
+                    'Ausencias' => $carga['ausencias'],
+                    'Licencias' => $carga['licencias'],
                     'Materias' => $materias,
                     'Cant. Materias' => count($carga['materias']),
                 ];
