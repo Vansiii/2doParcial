@@ -21,7 +21,7 @@ class HorarioController extends Controller
     public function asignar(Request $request)
     {
         $materias = Materia::orderBy('sigla')->get();
-        $aulas = Aula::orderBy('nroaula')->get();
+        $aulas = Aula::with('modulo')->orderBy('nroaula')->get();
         $grupos = Grupo::with('grupoMaterias.docente')->orderBy('sigla')->get();
         $dias = Dia::orderBy('id')->get();
 
@@ -52,28 +52,104 @@ class HorarioController extends Controller
 
         return view('horarios.asignar', compact('materias', 'aulas', 'grupos', 'dias', 'horarios'));
     }
+    
+    /**
+     * API: Verificar disponibilidad de aulas en tiempo real
+     */
+    public function verificarDisponibilidad(Request $request)
+    {
+        $diaId = $request->dia_id;
+        $horaIni = $request->hora_ini;
+        $horaFin = $request->hora_fin;
+        
+        if (!$diaId || !$horaIni || !$horaFin) {
+            return response()->json(['error' => 'Parámetros incompletos'], 400);
+        }
+        
+        // Obtener todas las aulas
+        $aulas = Aula::with('modulo')->orderBy('nroaula')->get();
+        
+        $disponibilidad = [];
+        
+        foreach ($aulas as $aula) {
+            // Verificar si el aula está ocupada en este horario
+            $conflicto = Horario::where('nroaula', $aula->nroaula)
+                ->whereHas('dias', function($q) use ($diaId) {
+                    $q->where('dia.id', $diaId);
+                })
+                ->where(function($query) use ($horaIni, $horaFin) {
+                    $query->where(function($q) use ($horaIni, $horaFin) {
+                        $q->where('horaini', '<=', $horaIni)
+                          ->where('horafin', '>', $horaIni);
+                    })->orWhere(function($q) use ($horaIni, $horaFin) {
+                        $q->where('horaini', '<', $horaFin)
+                          ->where('horafin', '>=', $horaFin);
+                    })->orWhere(function($q) use ($horaIni, $horaFin) {
+                        $q->where('horaini', '>=', $horaIni)
+                          ->where('horafin', '<=', $horaFin);
+                    });
+                })
+                ->with(['materias', 'grupo'])
+                ->first();
+            
+            $disponibilidad[] = [
+                'nroaula' => $aula->nroaula,
+                'capacidad' => $aula->capacidad,
+                'modulo' => $aula->modulo ? $aula->modulo->codigo : 'N/A',
+                'disponible' => !$conflicto,
+                'conflicto' => $conflicto ? [
+                    'materia' => $conflicto->materias->first()->nombre ?? 'N/A',
+                    'grupo' => $conflicto->grupo->sigla ?? 'N/A',
+                    'horario' => $conflicto->horaini . ' - ' . $conflicto->horafin
+                ] : null
+            ];
+        }
+        
+        return response()->json($disponibilidad);
+    }
 
     /**
      * CU12: Guardar horario asignado
      */
     public function guardar(Request $request)
     {
+        // Validación básica
         $request->validate([
             'sigla_materia' => 'required|exists:materia,sigla',
             'id_grupo' => 'required|exists:grupo,id',
             'dias_seleccionados' => 'required|array|min:1',
             'dias_seleccionados.*' => 'exists:dia,id',
-            'nroaula' => 'required|array',
-            'nroaula.*' => 'exists:aula,nroaula',
-            'horaini' => 'required|array',
-            'horafin' => 'required|array',
         ], [
             'sigla_materia.required' => 'Debe seleccionar una materia',
             'id_grupo.required' => 'Debe seleccionar un grupo',
             'dias_seleccionados.required' => 'Debe seleccionar al menos un día',
             'dias_seleccionados.min' => 'Debe seleccionar al menos un día',
-            'nroaula.required' => 'Debe seleccionar las aulas para cada día',
         ]);
+        
+        // Validación manual de aulas, horaini y horafin para cada día seleccionado
+        foreach ($request->dias_seleccionados as $diaId) {
+            if (!isset($request->nroaula[$diaId]) || empty($request->nroaula[$diaId])) {
+                $dia = Dia::find($diaId);
+                return back()->withErrors(['error' => "Debe seleccionar un aula para {$dia->descripcion}"])->withInput();
+            }
+            
+            // Validar que el aula existe
+            $aulaExiste = Aula::where('nroaula', $request->nroaula[$diaId])->exists();
+            if (!$aulaExiste) {
+                $dia = Dia::find($diaId);
+                return back()->withErrors(['error' => "El aula seleccionada para {$dia->descripcion} no es válida"])->withInput();
+            }
+            
+            if (!isset($request->horaini[$diaId]) || empty($request->horaini[$diaId])) {
+                $dia = Dia::find($diaId);
+                return back()->withErrors(['error' => "Debe especificar hora de inicio para {$dia->descripcion}"])->withInput();
+            }
+            
+            if (!isset($request->horafin[$diaId]) || empty($request->horafin[$diaId])) {
+                $dia = Dia::find($diaId);
+                return back()->withErrors(['error' => "Debe especificar hora de fin para {$dia->descripcion}"])->withInput();
+            }
+        }
 
         try {
             DB::beginTransaction();

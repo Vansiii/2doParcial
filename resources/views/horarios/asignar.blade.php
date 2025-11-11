@@ -14,6 +14,36 @@
         text-align: center;
         padding: 10px;
     }
+    .alert-sm {
+        font-size: 0.85rem;
+    }
+    .aula-select option:disabled {
+        background-color: #f8d7da;
+        font-style: italic;
+    }
+    .aula-select optgroup {
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+    .spinner-border-sm {
+        width: 1rem;
+        height: 1rem;
+        border-width: 0.15em;
+    }
+    #aulas_disponibles_0,
+    #aulas_disponibles_1,
+    #aulas_disponibles_2,
+    #aulas_disponibles_3,
+    #aulas_disponibles_4,
+    #aulas_disponibles_5,
+    #aulas_disponibles_6,
+    #aulas_disponibles_7 {
+        animation: fadeIn 0.3s ease-in;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
 </style>
 @endsection
 
@@ -131,40 +161,47 @@
                                                     
                                                     <div id="fields_{{ $dia->id }}" style="display: {{ in_array($dia->id, old('dias_seleccionados', [])) ? 'block' : 'none' }};">
                                                         <div class="mb-2">
-                                                            <label for="nroaula_{{ $dia->id }}" class="form-label small">
-                                                                <i class="fas fa-door-open me-1"></i>Aula
-                                                            </label>
-                                                            <select class="form-select form-select-sm" 
-                                                                    id="nroaula_{{ $dia->id }}" 
-                                                                    name="nroaula[{{ $dia->id }}]">
-                                                                <option value="">Seleccione</option>
-                                                                @foreach($aulas as $aula)
-                                                                    <option value="{{ $aula->nroaula }}" 
-                                                                        {{ old('nroaula.'.$dia->id) == $aula->nroaula ? 'selected' : '' }}>
-                                                                        {{ $aula->nroaula }} ({{ $aula->capacidad }})
-                                                                    </option>
-                                                                @endforeach
-                                                            </select>
-                                                        </div>
-                                                        <div class="mb-2">
                                                             <label for="horaini_{{ $dia->id }}" class="form-label small">
                                                                 <i class="fas fa-clock me-1"></i>Hora Inicio
                                                             </label>
                                                             <input type="time" 
-                                                                   class="form-control form-control-sm" 
+                                                                   class="form-control form-control-sm hora-field" 
                                                                    id="horaini_{{ $dia->id }}" 
                                                                    name="horaini[{{ $dia->id }}]" 
-                                                                   value="{{ old('horaini.'.$dia->id) }}">
+                                                                   data-dia="{{ $dia->id }}"
+                                                                   value="{{ old('horaini.'.$dia->id) }}"
+                                                                   onchange="verificarDisponibilidadAulas({{ $dia->id }})">
                                                         </div>
                                                         <div class="mb-2">
                                                             <label for="horafin_{{ $dia->id }}" class="form-label small">
                                                                 <i class="fas fa-clock me-1"></i>Hora Fin
                                                             </label>
                                                             <input type="time" 
-                                                                   class="form-control form-control-sm" 
+                                                                   class="form-control form-control-sm hora-field" 
                                                                    id="horafin_{{ $dia->id }}" 
                                                                    name="horafin[{{ $dia->id }}]" 
-                                                                   value="{{ old('horafin.'.$dia->id) }}">
+                                                                   data-dia="{{ $dia->id }}"
+                                                                   value="{{ old('horafin.'.$dia->id) }}"
+                                                                   onchange="verificarDisponibilidadAulas({{ $dia->id }})">
+                                                        </div>
+                                                        <div class="mb-2">
+                                                            <label for="nroaula_{{ $dia->id }}" class="form-label small">
+                                                                <i class="fas fa-door-open me-1"></i>Aula
+                                                                <span id="loading_{{ $dia->id }}" class="spinner-border spinner-border-sm ms-2" style="display: none;"></span>
+                                                            </label>
+                                                            <div id="aulas_disponibles_{{ $dia->id }}" class="alert alert-info alert-sm p-2 mb-2" style="display: none; font-size: 0.85rem;">
+                                                                <i class="fas fa-info-circle me-1"></i>
+                                                                <span id="mensaje_disponibilidad_{{ $dia->id }}">Seleccione horario para ver disponibilidad</span>
+                                                            </div>
+                                                            <select class="form-select form-select-sm aula-select" 
+                                                                    id="nroaula_{{ $dia->id }}" 
+                                                                    name="nroaula[{{ $dia->id }}]"
+                                                                    data-dia="{{ $dia->id }}">
+                                                                <option value="">Seleccione horario primero</option>
+                                                            </select>
+                                                            <div id="info_aula_{{ $dia->id }}" class="mt-1" style="font-size: 0.75rem; display: none;">
+                                                                <!-- Información detallada del aula seleccionada -->
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -335,6 +372,7 @@ function toggleDiaFields(diaId) {
     const nroaula = document.getElementById('nroaula_' + diaId);
     const horaini = document.getElementById('horaini_' + diaId);
     const horafin = document.getElementById('horafin_' + diaId);
+    const disponibilidadDiv = document.getElementById('aulas_disponibles_' + diaId);
     
     if (checkbox.checked) {
         fields.style.display = 'block';
@@ -349,6 +387,126 @@ function toggleDiaFields(diaId) {
         nroaula.value = '';
         horaini.value = '';
         horafin.value = '';
+        if (disponibilidadDiv) disponibilidadDiv.style.display = 'none';
+    }
+}
+
+// Verificar disponibilidad de aulas en tiempo real
+async function verificarDisponibilidadAulas(diaId) {
+    const horaIni = document.getElementById('horaini_' + diaId).value;
+    const horaFin = document.getElementById('horafin_' + diaId).value;
+    const selectAula = document.getElementById('nroaula_' + diaId);
+    const loading = document.getElementById('loading_' + diaId);
+    const disponibilidadDiv = document.getElementById('aulas_disponibles_' + diaId);
+    const mensajeDisp = document.getElementById('mensaje_disponibilidad_' + diaId);
+    
+    // Validar que ambas horas estén completas
+    if (!horaIni || !horaFin) {
+        selectAula.innerHTML = '<option value="">Seleccione horario primero</option>';
+        if (disponibilidadDiv) disponibilidadDiv.style.display = 'none';
+        return;
+    }
+    
+    // Validar que hora fin sea mayor que hora inicio
+    if (horaIni >= horaFin) {
+        selectAula.innerHTML = '<option value="">Hora fin debe ser posterior a hora inicio</option>';
+        if (disponibilidadDiv) disponibilidadDiv.style.display = 'none';
+        return;
+    }
+    
+    // Mostrar loading
+    if (loading) loading.style.display = 'inline-block';
+    selectAula.disabled = true;
+    
+    try {
+        const response = await fetch('{{ route("horarios.verificar-disponibilidad") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                dia_id: diaId,
+                hora_ini: horaIni,
+                hora_fin: horaFin
+            })
+        });
+        
+        if (!response.ok) throw new Error('Error al verificar disponibilidad');
+        
+        const aulas = await response.json();
+        
+        // Contar aulas disponibles y ocupadas
+        const disponibles = aulas.filter(a => a.disponible).length;
+        const ocupadas = aulas.filter(a => !a.disponible).length;
+        
+        // Actualizar mensaje de disponibilidad
+        if (disponibles > 0) {
+            mensajeDisp.innerHTML = `<strong>${disponibles}</strong> aula(s) disponible(s) - <span class="text-danger">${ocupadas}</span> ocupada(s)`;
+            disponibilidadDiv.className = 'alert alert-success alert-sm p-2 mb-2';
+        } else {
+            mensajeDisp.innerHTML = `<strong>¡Sin aulas disponibles!</strong> Todas las aulas están ocupadas en este horario`;
+            disponibilidadDiv.className = 'alert alert-danger alert-sm p-2 mb-2';
+        }
+        disponibilidadDiv.style.display = 'block';
+        
+        // Actualizar select con opciones
+        selectAula.innerHTML = '<option value="">Seleccione un aula</option>';
+        
+        // Primero agregar aulas disponibles (en verde)
+        const aulasDisponibles = aulas.filter(a => a.disponible);
+        if (aulasDisponibles.length > 0) {
+            const optgroupDisp = document.createElement('optgroup');
+            optgroupDisp.label = '✓ Disponibles (' + aulasDisponibles.length + ')';
+            
+            aulasDisponibles.forEach(aula => {
+                const option = document.createElement('option');
+                option.value = aula.nroaula;
+                option.textContent = `${aula.nroaula} - Cap: ${aula.capacidad} - ${aula.modulo}`;
+                option.style.color = '#28a745';
+                option.style.fontWeight = 'bold';
+                optgroupDisp.appendChild(option);
+            });
+            
+            selectAula.appendChild(optgroupDisp);
+        }
+        
+        // Luego agregar aulas ocupadas (en rojo, deshabilitadas)
+        const aulasOcupadas = aulas.filter(a => !a.disponible);
+        if (aulasOcupadas.length > 0) {
+            const optgroupOcup = document.createElement('optgroup');
+            optgroupOcup.label = '✗ Ocupadas (' + aulasOcupadas.length + ')';
+            
+            aulasOcupadas.forEach(aula => {
+                const option = document.createElement('option');
+                option.value = aula.nroaula;
+                option.textContent = `${aula.nroaula} - OCUPADA por ${aula.conflicto.materia} (${aula.conflicto.grupo})`;
+                option.style.color = '#dc3545';
+                option.disabled = true;
+                optgroupOcup.appendChild(option);
+            });
+            
+            selectAula.appendChild(optgroupOcup);
+        }
+        
+        selectAula.disabled = false;
+        
+        // Si hay al menos una disponible, habilitar y sugerir la primera
+        if (disponibles > 0) {
+            selectAula.value = aulasDisponibles[0].nroaula;
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        selectAula.innerHTML = '<option value="">Error al cargar aulas</option>';
+        if (disponibilidadDiv) {
+            disponibilidadDiv.className = 'alert alert-danger alert-sm p-2 mb-2';
+            disponibilidadDiv.style.display = 'block';
+            mensajeDisp.textContent = 'Error al verificar disponibilidad';
+        }
+    } finally {
+        if (loading) loading.style.display = 'none';
+        selectAula.disabled = false;
     }
 }
 

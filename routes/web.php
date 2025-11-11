@@ -106,6 +106,9 @@ Route::middleware('auth')->group(function () {
         Route::get('horarios/asignar', [HorarioController::class, 'asignar'])->name('horarios.asignar');
         Route::post('horarios/guardar', [HorarioController::class, 'guardar'])->name('horarios.guardar');
         Route::delete('horarios/{id}', [HorarioController::class, 'destroy'])->name('horarios.destroy');
+        
+        // API: Verificar disponibilidad de aulas en tiempo real
+        Route::post('horarios/verificar-disponibilidad', [HorarioController::class, 'verificarDisponibilidad'])->name('horarios.verificar-disponibilidad');
     });
     
     // CU13: Consultar Horario por Docente (todos los usuarios)
