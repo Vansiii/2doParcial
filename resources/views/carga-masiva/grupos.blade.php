@@ -1,15 +1,15 @@
 @extends('layouts.app')
 
-@section('title', 'Carga Masiva de Materias')
+@section('title', 'Carga Masiva de Grupos')
 
 @section('content')
 <div class="container-fluid py-4">
     <div class="row justify-content-center">
         <div class="col-lg-10">
             <div class="card shadow-sm">
-                <div class="card-header bg-success text-white">
+                <div class="card-header bg-warning text-dark">
                     <h4 class="mb-0">
-                        <i class="fas fa-book me-2"></i>Carga Masiva de Materias
+                        <i class="fas fa-users me-2"></i>Carga Masiva de Grupos
                     </h4>
                 </div>
                 <div class="card-body">
@@ -51,17 +51,17 @@
                     <!-- Instrucciones -->
                     <div class="row">
                         <div class="col-md-6">
-                            <div class="card mb-4 border-left-success">
+                            <div class="card mb-4 border-left-warning">
                                 <div class="card-body">
-                                    <h5 class="card-title text-success">
+                                    <h5 class="card-title text-warning">
                                         <i class="fas fa-info-circle me-2"></i>Instrucciones
                                     </h5>
                                     <ol class="mb-0">
                                         <li class="mb-2">Descargue la plantilla de ejemplo haciendo clic en el botón "Descargar Plantilla"</li>
-                                        <li class="mb-2">Complete los datos de las materias en el archivo Excel o CSV</li>
-                                        <li class="mb-2">Marque con "X" o "1" las carreras a las que pertenece cada materia</li>
-                                        <li class="mb-2">Si desea asignar al período activo, marque la columna correspondiente</li>
-                                        <li class="mb-0">Guarde el archivo y súbalo usando el formulario de carga</li>
+                                        <li class="mb-2">Complete los datos de los grupos en el archivo Excel o CSV</li>
+                                        <li class="mb-2">Especifique la gestión y período académico para cada grupo</li>
+                                        <li class="mb-2">Guarde el archivo y súbalo usando el formulario de carga</li>
+                                        <li class="mb-0">Después asigne materias y docentes usando "Gestionar Grupos"</li>
                                     </ol>
                                 </div>
                             </div>
@@ -75,18 +75,19 @@
                                     </h5>
                                     <p><strong>Columnas requeridas:</strong></p>
                                     <ul class="mb-3">
-                                        <li><code>sigla</code> - Código de la materia (máx. 6 caracteres)</li>
-                                        <li><code>nombre</code> - Nombre completo (máx. 100 caracteres)</li>
-                                        <li><code>nivel</code> - Nivel de la materia (número 1-10)</li>
+                                        <li><code>sigla</code> - Código del grupo (máx. 3 caracteres)</li>
+                                        <li><code>periodo_gestion</code> - Año del período (ej: 2025)</li>
+                                        <li><code>periodo_numero</code> - Número del período (1 o 2)</li>
                                     </ul>
-                                    <p><strong>Columnas opcionales:</strong></p>
-                                    <ul class="mb-3">
-                                        <li><code>asignar_periodo_activo</code> - Marcar con X o 1</li>
-                                    </ul>
-                                    <p><strong>Columnas de carreras:</strong></p>
+                                    <p><strong>Períodos disponibles:</strong></p>
                                     <ul class="mb-0">
-                                        @foreach($carreras as $carrera)
-                                            <li><code>{{ $carrera->cod }}</code> - {{ $carrera->nombre }}</li>
+                                        @foreach($periodos->take(5) as $periodo)
+                                            <li>
+                                                <span class="badge {{ $periodo->activo ? 'bg-success' : 'bg-secondary' }}">
+                                                    {{ $periodo->gestion }}/{{ $periodo->periodo }}
+                                                </span>
+                                                @if($periodo->activo) <small class="text-success">(Activo)</small> @endif
+                                            </li>
                                         @endforeach
                                     </ul>
                                 </div>
@@ -96,7 +97,7 @@
 
                     <!-- Botón de descarga de plantilla -->
                     <div class="d-flex justify-content-center mb-4">
-                        <a href="{{ route('carga-masiva.materias.plantilla') }}" class="btn btn-success btn-lg">
+                        <a href="{{ route('carga-masiva.grupos.plantilla') }}" class="btn btn-success btn-lg">
                             <i class="fas fa-download me-2"></i>Descargar Plantilla de Ejemplo
                         </a>
                     </div>
@@ -106,7 +107,7 @@
                     <!-- Formulario de carga -->
                     <div class="row justify-content-center">
                         <div class="col-md-8">
-                            <form action="{{ route('carga-masiva.materias.store') }}" method="POST" enctype="multipart/form-data">
+                            <form action="{{ route('carga-masiva.grupos.store') }}" method="POST" enctype="multipart/form-data">
                                 @csrf
                                 
                                 <div class="mb-4">
@@ -131,18 +132,18 @@
                                     <i class="fas fa-exclamation-triangle me-2"></i>
                                     <strong>Importante:</strong>
                                     <ul class="mb-0 mt-2">
-                                        <li>Las <strong>siglas</strong> deben ser únicas y se convertirán a MAYÚSCULAS</li>
-                                        <li>Los <strong>nombres</strong> se guardarán en MAYÚSCULAS automáticamente</li>
-                                        <li>El <strong>nivel</strong> debe ser un número entre 1 y 10</li>
-                                        <li>Marque con "X" o "1" las carreras a las que pertenece cada materia</li>
-                                        <li>Si marca "asignar_periodo_activo", la materia se registrará en el período académico actual</li>
-                                        <li>Las materias duplicadas (misma sigla) serán omitidas</li>
+                                        <li>Las <strong>siglas</strong> deben ser únicas dentro del mismo período (máx. 3 caracteres)</li>
+                                        <li>El <strong>periodo_gestion</strong> debe ser un año válido (ej: 2025)</li>
+                                        <li>El <strong>periodo_numero</strong> debe ser <code>1</code> o <code>2</code></li>
+                                        <li>El período académico especificado debe existir en el sistema</li>
+                                        <li>Los grupos duplicados (misma sigla en el mismo período) serán omitidos</li>
+                                        <li>Esta carga solo crea los grupos. Las materias y docentes se asignan después</li>
                                     </ul>
                                 </div>
 
                                 <div class="d-flex gap-2 justify-content-center">
-                                    <button type="submit" class="btn btn-success btn-lg">
-                                        <i class="fas fa-upload me-2"></i>Cargar Materias
+                                    <button type="submit" class="btn btn-warning btn-lg text-dark">
+                                        <i class="fas fa-upload me-2"></i>Cargar Grupos
                                     </button>
                                     <a href="{{ route('carga-masiva.index') }}" class="btn btn-secondary btn-lg">
                                         <i class="fas fa-arrow-left me-2"></i>Volver
@@ -168,51 +169,42 @@
                             <thead class="table-light">
                                 <tr>
                                     <th>sigla</th>
-                                    <th>nombre</th>
-                                    <th>nivel</th>
-                                    <th>asignar_periodo_activo</th>
-                                    @foreach($carreras->take(4) as $carrera)
-                                        <th>{{ $carrera->cod }}</th>
-                                    @endforeach
+                                    <th>periodo_gestion</th>
+                                    <th>periodo_numero</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td>INF220</td>
-                                    <td>BASE DE DATOS I</td>
+                                    <td>F1</td>
+                                    <td>2025</td>
                                     <td>2</td>
-                                    <td>X</td>
-                                    <td>1</td>
-                                    <td>1</td>
-                                    <td>1</td>
-                                    <td>1</td>
                                 </tr>
                                 <tr>
-                                    <td>MAT101</td>
-                                    <td>CÁLCULO I</td>
-                                    <td>1</td>
-                                    <td>X</td>
-                                    <td>1</td>
-                                    <td></td>
-                                    <td>1</td>
-                                    <td>1</td>
+                                    <td>SZ</td>
+                                    <td>2025</td>
+                                    <td>2</td>
                                 </tr>
                                 <tr>
-                                    <td>PRG110</td>
-                                    <td>PROGRAMACIÓN I</td>
-                                    <td>1</td>
-                                    <td>X</td>
-                                    <td>1</td>
-                                    <td>1</td>
-                                    <td>1</td>
-                                    <td>1</td>
+                                    <td>CI</td>
+                                    <td>2025</td>
+                                    <td>2</td>
+                                </tr>
+                                <tr>
+                                    <td>I2</td>
+                                    <td>2025</td>
+                                    <td>2</td>
+                                </tr>
+                                <tr>
+                                    <td>SF</td>
+                                    <td>2025</td>
+                                    <td>2</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                     <p class="text-muted mb-0">
                         <i class="fas fa-lightbulb me-2"></i>
-                        <strong>Tip:</strong> Una materia puede pertenecer a múltiples carreras. Simplemente marque todas las columnas de carreras que correspondan.
+                        <strong>Tip:</strong> Puede crear múltiples grupos para el mismo período. Después de la carga, vaya a "Gestión de Grupos" para asignar materias y docentes a cada grupo.
                     </p>
                 </div>
             </div>

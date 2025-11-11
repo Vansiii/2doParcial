@@ -19,64 +19,72 @@
 
                     <div class="row g-4">
                         <!-- Opción: Usuarios -->
-                        <div class="col-md-6">
+                        <div class="col-md-3">
                             <div class="card h-100 border-primary shadow-sm hover-shadow">
                                 <div class="card-body text-center p-4">
                                     <div class="mb-3">
-                                        <i class="fas fa-users fa-4x text-primary"></i>
+                                        <i class="fas fa-users fa-3x text-primary"></i>
                                     </div>
-                                    <h4 class="card-title mb-3">Usuarios</h4>
-                                    <p class="card-text text-muted mb-4">
-                                        Cargue múltiples usuarios con sus roles (Docentes, Coordinadores, Autoridades, Administradores)
+                                    <h5 class="card-title mb-3">Usuarios</h5>
+                                    <p class="card-text text-muted mb-3 small">
+                                        Cargue múltiples usuarios con sus roles
                                     </p>
-                                    <ul class="list-unstyled text-start mb-4">
-                                        <li class="mb-2">
-                                            <i class="fas fa-check-circle text-success me-2"></i>
-                                            Asignación automática de roles
-                                        </li>
-                                        <li class="mb-2">
-                                            <i class="fas fa-check-circle text-success me-2"></i>
-                                            Validación de CI y correos
-                                        </li>
-                                        <li class="mb-2">
-                                            <i class="fas fa-check-circle text-success me-2"></i>
-                                            Código generado automáticamente
-                                        </li>
-                                    </ul>
-                                    <a href="{{ route('carga-masiva.usuarios') }}" class="btn btn-primary btn-lg w-100">
-                                        <i class="fas fa-upload me-2"></i>Cargar Usuarios
+                                    <a href="{{ route('carga-masiva.usuarios') }}" class="btn btn-primary w-100">
+                                        <i class="fas fa-upload me-2"></i>Cargar
                                     </a>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Opción: Materias -->
-                        <div class="col-md-6">
+                        <div class="col-md-3">
                             <div class="card h-100 border-success shadow-sm hover-shadow">
                                 <div class="card-body text-center p-4">
                                     <div class="mb-3">
-                                        <i class="fas fa-book fa-4x text-success"></i>
+                                        <i class="fas fa-book fa-3x text-success"></i>
                                     </div>
-                                    <h4 class="card-title mb-3">Materias</h4>
-                                    <p class="card-text text-muted mb-4">
-                                        Cargue materias y asígnelas automáticamente a carreras y al período académico activo
+                                    <h5 class="card-title mb-3">Materias</h5>
+                                    <p class="card-text text-muted mb-3 small">
+                                        Cargue materias y asígnelas a carreras
                                     </p>
-                                    <ul class="list-unstyled text-start mb-4">
-                                        <li class="mb-2">
-                                            <i class="fas fa-check-circle text-success me-2"></i>
-                                            Asignación a múltiples carreras
-                                        </li>
-                                        <li class="mb-2">
-                                            <i class="fas fa-check-circle text-success me-2"></i>
-                                            Registro en período activo
-                                        </li>
-                                        <li class="mb-2">
-                                            <i class="fas fa-check-circle text-success me-2"></i>
-                                            Validación de siglas y niveles
-                                        </li>
-                                    </ul>
-                                    <a href="{{ route('carga-masiva.materias') }}" class="btn btn-success btn-lg w-100">
-                                        <i class="fas fa-upload me-2"></i>Cargar Materias
+                                    <a href="{{ route('carga-masiva.materias') }}" class="btn btn-success w-100">
+                                        <i class="fas fa-upload me-2"></i>Cargar
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Opción: Grupos -->
+                        <div class="col-md-3">
+                            <div class="card h-100 border-warning shadow-sm hover-shadow">
+                                <div class="card-body text-center p-4">
+                                    <div class="mb-3">
+                                        <i class="fas fa-layer-group fa-3x text-warning"></i>
+                                    </div>
+                                    <h5 class="card-title mb-3">Grupos</h5>
+                                    <p class="card-text text-muted mb-3 small">
+                                        Cargue múltiples grupos por período
+                                    </p>
+                                    <a href="{{ route('carga-masiva.grupos') }}" class="btn btn-warning w-100 text-dark">
+                                        <i class="fas fa-upload me-2"></i>Cargar
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Opción: Horarios -->
+                        <div class="col-md-3">
+                            <div class="card h-100 border-info shadow-sm hover-shadow">
+                                <div class="card-body text-center p-4">
+                                    <div class="mb-3">
+                                        <i class="fas fa-clock fa-3x text-info"></i>
+                                    </div>
+                                    <h5 class="card-title mb-3">Horarios</h5>
+                                    <p class="card-text text-muted mb-3 small">
+                                        Cargue horarios de materias por grupo
+                                    </p>
+                                    <a href="{{ route('carga-masiva.horarios') }}" class="btn btn-info w-100 text-white">
+                                        <i class="fas fa-upload me-2"></i>Cargar
                                     </a>
                                 </div>
                             </div>

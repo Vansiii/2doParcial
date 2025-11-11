@@ -29,11 +29,17 @@ class ReporteController extends Controller
             $query->where('descripcion', 'Docente');
         })->orderBy('nombre')->get();
         
-        $grupos = Grupo::orderBy('sigla')->get();
+        $grupos = Grupo::with('periodo')->orderBy('sigla')->get();
         $aulas = Aula::orderBy('nroaula')->get();
         $dias = Dia::orderBy('id')->get();
+        $periodos = \App\Models\Semestre::orderBy('gestion', 'desc')
+            ->orderBy('periodo', 'desc')
+            ->get();
         
-        return view('reportes.index', compact('docentes', 'grupos', 'aulas', 'dias'));
+        // Obtener todos los roles para el filtro de usuarios
+        $roles = \App\Models\Rol::orderBy('descripcion')->get();
+        
+        return view('reportes.index', compact('docentes', 'grupos', 'aulas', 'dias', 'periodos', 'roles'));
     }
 
     /**
@@ -463,4 +469,344 @@ class ReporteController extends Controller
             return (new FastExcel(collect($data)))->download($filename . ($formato === 'csv' ? '.csv' : '.xlsx'));
         }
     }
+
+    /**
+     * Generar Reporte Personalizado con columnas seleccionables
+     */
+    public function personalizado(Request $request)
+    {
+        $request->validate([
+            'tipo_reporte' => 'required|in:usuarios,materias,grupos,horarios,asistencias',
+            'formato' => 'required|in:pdf,excel,csv',
+            'columnas' => 'required|array|min:1',
+            'id_periodo' => 'nullable|exists:periodo_academico,id',
+            'id_rol' => 'nullable|exists:rol,id',
+            'fecha_inicio' => 'nullable|date',
+            'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
+        ]);
+
+        $tipoReporte = $request->tipo_reporte;
+        $formato = $request->formato;
+        $columnasSeleccionadas = $request->columnas;
+        $idPeriodo = $request->id_periodo;
+        $idRol = $request->id_rol;
+        $fechaInicio = $request->fecha_inicio;
+        $fechaFin = $request->fecha_fin;
+
+        $data = [];
+        $titulo = '';
+
+        switch ($tipoReporte) {
+            case 'usuarios':
+                $data = $this->generarReporteUsuarios($columnasSeleccionadas, $idRol);
+                $titulo = 'Reporte de Usuarios';
+                break;
+            
+            case 'materias':
+                $data = $this->generarReporteMaterias($columnasSeleccionadas, $idPeriodo);
+                $titulo = 'Reporte de Materias';
+                break;
+            
+            case 'grupos':
+                $data = $this->generarReporteGrupos($columnasSeleccionadas, $idPeriodo);
+                $titulo = 'Reporte de Grupos';
+                break;
+            
+            case 'horarios':
+                $data = $this->generarReporteHorarios($columnasSeleccionadas, $idPeriodo);
+                $titulo = 'Reporte de Horarios';
+                break;
+            
+            case 'asistencias':
+                $data = $this->generarReporteAsistencias($columnasSeleccionadas, $fechaInicio, $fechaFin);
+                $titulo = 'Reporte de Asistencias';
+                break;
+        }
+
+        // Registrar en bitácora
+        Bitacora::create([
+            'fecha' => now(),
+            'ip' => request()->ip(),
+            'accion' => 'Generó reporte personalizado: ' . $titulo,
+            'estado' => true,
+            'detalle' => 'Formato: ' . strtoupper($formato) . ', Columnas: ' . count($columnasSeleccionadas),
+            'id_usuario' => auth()->id(),
+        ]);
+
+        // Preparar información de filtros para el PDF
+        $filtroInfo = '';
+        if ($idRol) {
+            $rol = \App\Models\Rol::find($idRol);
+            if ($rol) {
+                $filtroInfo .= 'Rol: ' . $rol->descripcion;
+            }
+        }
+        if ($idPeriodo) {
+            $periodo = Semestre::find($idPeriodo);
+            if ($periodo) {
+                $filtroInfo .= ($filtroInfo ? ' | ' : '') . 'Periodo: ' . $periodo->abreviatura . ' (' . $periodo->gestion . '-' . $periodo->periodo . ')';
+            }
+        }
+        if ($fechaInicio && $fechaFin) {
+            $filtroInfo .= ($filtroInfo ? ' | ' : '') . 'Fechas: ' . \Carbon\Carbon::parse($fechaInicio)->format('d/m/Y') . ' - ' . \Carbon\Carbon::parse($fechaFin)->format('d/m/Y');
+        }
+
+        // Generar según formato
+        if ($formato === 'pdf') {
+            // Extraer las claves (nombres de columnas) del primer registro
+            $columnas = count($data) > 0 ? array_keys($data[0]) : [];
+            
+            $pdf = Pdf::loadView('reportes.pdf.personalizado', [
+                'datos' => $data,
+                'tipoReporte' => $titulo,
+                'columnas' => $columnas,
+                'filtroInfo' => $filtroInfo ?: null
+            ]);
+            $pdf->setPaper('letter', 'landscape');
+            return $pdf->download('reporte_personalizado_' . $tipoReporte . '_' . now()->format('Y-m-d_His') . '.pdf');
+        } else {
+            $filename = 'reporte_personalizado_' . $tipoReporte . '_' . now()->format('Y-m-d_His');
+            return (new FastExcel(collect($data)))->download($filename . ($formato === 'csv' ? '.csv' : '.xlsx'));
+        }
+    }
+
+    private function generarReporteUsuarios($columnas, $idRol = null)
+    {
+        $query = Usuario::with('roles');
+        
+        // Filtrar por rol si se especifica
+        if ($idRol) {
+            $query->whereHas('roles', function($q) use ($idRol) {
+                $q->where('rol.id', $idRol);
+            });
+        }
+        
+        $usuarios = $query->orderBy('nombre')->get();
+        
+        $data = [];
+        foreach ($usuarios as $usuario) {
+            $row = [];
+            foreach ($columnas as $columna) {
+                switch ($columna) {
+                    case 'codigo':
+                        $row['Código'] = $usuario->codigo;
+                        break;
+                    case 'ci':
+                        $row['CI'] = $usuario->ci;
+                        break;
+                    case 'nombre':
+                        $row['Nombre'] = $usuario->nombre;
+                        break;
+                    case 'correo':
+                        $row['Correo'] = $usuario->correo;
+                        break;
+                    case 'telefono':
+                        $row['Teléfono'] = $usuario->telefono;
+                        break;
+                    case 'roles':
+                        $row['Roles'] = $usuario->roles->pluck('descripcion')->implode(', ');
+                        break;
+                }
+            }
+            $data[] = $row;
+        }
+        return $data;
+    }
+
+    private function generarReporteMaterias($columnas, $idPeriodo = null)
+    {
+        $query = \App\Models\Materia::with(['carreras', 'periodos']);
+        
+        if ($idPeriodo) {
+            $query->whereHas('periodos', function($q) use ($idPeriodo) {
+                $q->where('id_periodo', $idPeriodo);
+            });
+        }
+        
+        $materias = $query->orderBy('sigla')->get();
+        
+        $data = [];
+        foreach ($materias as $materia) {
+            $row = [];
+            foreach ($columnas as $columna) {
+                switch ($columna) {
+                    case 'sigla':
+                        $row['Sigla'] = $materia->sigla;
+                        break;
+                    case 'nombre':
+                        $row['Nombre'] = $materia->nombre;
+                        break;
+                    case 'nivel':
+                        $row['Nivel'] = $materia->nivel;
+                        break;
+                    case 'carreras':
+                        $row['Carreras'] = $materia->carreras->pluck('nombre')->implode(', ') ?: 'N/A';
+                        break;
+                    case 'periodos':
+                        $periodos = $materia->periodos->map(function($p) {
+                            return $p->gestion . '/' . $p->periodo;
+                        })->implode(', ');
+                        $row['Períodos'] = $periodos ?: 'N/A';
+                        break;
+                }
+            }
+            $data[] = $row;
+        }
+        return $data;
+    }
+
+    private function generarReporteGrupos($columnas, $idPeriodo = null)
+    {
+        $query = Grupo::with(['periodo', 'materias.carreras', 'docentes']);
+        
+        if ($idPeriodo) {
+            $query->where('id_periodo', $idPeriodo);
+        }
+        
+        $grupos = $query->orderBy('sigla')->get();
+        
+        $data = [];
+        foreach ($grupos as $grupo) {
+            $row = [];
+            foreach ($columnas as $columna) {
+                switch ($columna) {
+                    case 'sigla':
+                        $row['Sigla'] = $grupo->sigla;
+                        break;
+                    case 'periodo':
+                        if ($grupo->periodo) {
+                            $row['Período'] = $grupo->periodo->gestion . '/' . $grupo->periodo->periodo;
+                        } else {
+                            $row['Período'] = 'N/A';
+                        }
+                        break;
+                    case 'materias':
+                        $row['Materias'] = $grupo->materias->pluck('nombre')->implode(', ') ?: 'N/A';
+                        break;
+                    case 'docentes':
+                        $row['Docentes'] = $grupo->docentes->pluck('nombre')->unique()->implode(', ') ?: 'N/A';
+                        break;
+                    case 'cantidad_materias':
+                        $row['Cant. Materias'] = $grupo->materias->count();
+                        break;
+                }
+            }
+            $data[] = $row;
+        }
+        return $data;
+    }
+
+    private function generarReporteHorarios($columnas, $idPeriodo = null)
+    {
+        $query = Horario::with(['grupo.periodo', 'grupo.materias', 'grupo.docentes', 'aula', 'dias']);
+        
+        if ($idPeriodo) {
+            $query->whereHas('grupo', function($q) use ($idPeriodo) {
+                $q->where('id_periodo', $idPeriodo);
+            });
+        }
+        
+        $horarios = $query->get();
+        
+        $data = [];
+        foreach ($horarios as $horario) {
+            $row = [];
+            foreach ($columnas as $columna) {
+                switch ($columna) {
+                    case 'grupo':
+                        $row['Grupo'] = $horario->grupo->sigla ?? 'N/A';
+                        break;
+                    case 'periodo':
+                        if ($horario->grupo && $horario->grupo->periodo) {
+                            $row['Período'] = $horario->grupo->periodo->gestion . '/' . $horario->grupo->periodo->periodo;
+                        } else {
+                            $row['Período'] = 'N/A';
+                        }
+                        break;
+                    case 'materia':
+                        $row['Materia'] = $horario->materias->first()->nombre ?? 'N/A';
+                        break;
+                    case 'docente':
+                        $row['Docente'] = $horario->grupo->docentes->first()->nombre ?? 'N/A';
+                        break;
+                    case 'aula':
+                        $row['Aula'] = $horario->aula->nroaula ?? 'N/A';
+                        break;
+                    case 'dias':
+                        $row['Días'] = $horario->dias->pluck('descripcion')->implode(', ') ?: 'N/A';
+                        break;
+                    case 'hora_inicio':
+                        $row['Hora Inicio'] = \Carbon\Carbon::parse($horario->horaini)->format('H:i');
+                        break;
+                    case 'hora_fin':
+                        $row['Hora Fin'] = \Carbon\Carbon::parse($horario->horafin)->format('H:i');
+                        break;
+                }
+            }
+            $data[] = $row;
+        }
+        return $data;
+    }
+
+    private function generarReporteAsistencias($columnas, $fechaInicio = null, $fechaFin = null)
+    {
+        $query = Asistencia::with(['usuario', 'horario.grupo.periodo', 'horario.materias', 'horario.aula']);
+        
+        if ($fechaInicio) {
+            $query->whereDate('fecha', '>=', $fechaInicio);
+        }
+        
+        if ($fechaFin) {
+            $query->whereDate('fecha', '<=', $fechaFin);
+        }
+        
+        $asistencias = $query->orderBy('fecha', 'desc')->get();
+        
+        $data = [];
+        foreach ($asistencias as $asistencia) {
+            $row = [];
+            foreach ($columnas as $columna) {
+                switch ($columna) {
+                    case 'fecha':
+                        $row['Fecha'] = \Carbon\Carbon::parse($asistencia->fecha)->format('d/m/Y');
+                        break;
+                    case 'hora':
+                        $row['Hora'] = \Carbon\Carbon::parse($asistencia->hora)->format('H:i');
+                        break;
+                    case 'docente_codigo':
+                        $row['Código Docente'] = $asistencia->usuario->codigo ?? 'N/A';
+                        break;
+                    case 'docente_ci':
+                        $row['CI Docente'] = $asistencia->usuario->ci ?? 'N/A';
+                        break;
+                    case 'docente_nombre':
+                        $row['Docente'] = $asistencia->usuario->nombre ?? 'N/A';
+                        break;
+                    case 'grupo':
+                        $row['Grupo'] = $asistencia->horario->grupo->sigla ?? 'N/A';
+                        break;
+                    case 'periodo':
+                        if ($asistencia->horario->grupo && $asistencia->horario->grupo->periodo) {
+                            $row['Período'] = $asistencia->horario->grupo->periodo->gestion . '/' . 
+                                            $asistencia->horario->grupo->periodo->periodo;
+                        } else {
+                            $row['Período'] = 'N/A';
+                        }
+                        break;
+                    case 'materia':
+                        $row['Materia'] = $asistencia->horario->materias->first()->nombre ?? 'N/A';
+                        break;
+                    case 'aula':
+                        $row['Aula'] = $asistencia->horario->aula->nroaula ?? 'N/A';
+                        break;
+                    case 'tipo':
+                        $row['Tipo'] = $asistencia->tipo;
+                        break;
+                }
+            }
+            $data[] = $row;
+        }
+        return $data;
+    }
 }
+

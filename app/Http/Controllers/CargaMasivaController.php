@@ -34,10 +34,11 @@ class CargaMasivaController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'archivo' => 'required|file|mimes:xlsx,xls,csv|max:10240',
+            'archivo' => 'required|file|mimes:xlsx,xls,csv,txt|mimetypes:text/csv,text/plain,application/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet|max:10240',
         ], [
             'archivo.required' => 'Debe seleccionar un archivo',
             'archivo.mimes' => 'El archivo debe ser Excel (.xlsx, .xls) o CSV (.csv)',
+            'archivo.mimetypes' => 'El archivo debe ser Excel (.xlsx, .xls) o CSV (.csv)',
             'archivo.max' => 'El archivo no debe superar 10MB',
         ]);
 

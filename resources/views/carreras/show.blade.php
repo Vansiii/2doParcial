@@ -61,7 +61,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach($carrera->materias->sortBy('sigla') as $materia)
+                                    @foreach($carrera->materias->sortBy('nivel') as $materia)
                                         <tr>
                                             <td>
                                                 <span class="badge bg-info">{{ $materia->sigla }}</span>

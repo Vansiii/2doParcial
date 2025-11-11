@@ -60,7 +60,7 @@ class MateriaController extends Controller
     {
         $request->validate([
             'sigla' => 'required|string|max:6|unique:materia,sigla',
-            'nombre' => 'required|string|max:30',
+            'nombre' => 'required|string|max:100',
             'nivel' => 'nullable|integer|min:0|max:10',
         ], [
             'sigla.required' => 'La sigla es obligatoria',
@@ -72,7 +72,7 @@ class MateriaController extends Controller
         try {
             $materia = Materia::create([
                 'sigla' => strtoupper($request->sigla),
-                'nombre' => $request->nombre,
+                'nombre' => strtoupper($request->nombre),
                 'nivel' => $request->nivel ?? 0,
             ]);
 
@@ -132,7 +132,7 @@ class MateriaController extends Controller
         $materia = Materia::findOrFail($sigla);
 
         $request->validate([
-            'nombre' => 'required|string|max:30',
+            'nombre' => 'required|string|max:100',
             'nivel' => 'nullable|integer|min:0|max:10',
         ], [
             'nombre.required' => 'El nombre es obligatorio',
@@ -140,7 +140,7 @@ class MateriaController extends Controller
         ]);
 
         try {
-            $materia->nombre = $request->nombre;
+            $materia->nombre = strtoupper($request->nombre);
             $materia->nivel = $request->nivel ?? 0;
             $materia->save();
 

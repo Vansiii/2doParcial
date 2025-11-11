@@ -55,6 +55,16 @@ Route::middleware('auth')->group(function () {
         Route::get('carga-masiva/materias', [App\Http\Controllers\CargaMasivaMateriaController::class, 'index'])->name('carga-masiva.materias');
         Route::post('carga-masiva/materias', [App\Http\Controllers\CargaMasivaMateriaController::class, 'store'])->name('carga-masiva.materias.store');
         Route::get('carga-masiva/materias/plantilla', [App\Http\Controllers\CargaMasivaMateriaController::class, 'descargarPlantilla'])->name('carga-masiva.materias.plantilla');
+        
+        // CU20C: Carga Masiva de Grupos
+        Route::get('carga-masiva/grupos', [App\Http\Controllers\CargaMasivaGrupoController::class, 'index'])->name('carga-masiva.grupos');
+        Route::post('carga-masiva/grupos', [App\Http\Controllers\CargaMasivaGrupoController::class, 'store'])->name('carga-masiva.grupos.store');
+        Route::get('carga-masiva/grupos/plantilla', [App\Http\Controllers\CargaMasivaGrupoController::class, 'descargarPlantilla'])->name('carga-masiva.grupos.plantilla');
+        
+        // CU20D: Carga Masiva de Horarios
+        Route::get('carga-masiva/horarios', [App\Http\Controllers\CargaMasivaHorarioController::class, 'index'])->name('carga-masiva.horarios');
+        Route::post('carga-masiva/horarios', [App\Http\Controllers\CargaMasivaHorarioController::class, 'store'])->name('carga-masiva.horarios.store');
+        Route::get('carga-masiva/horarios/plantilla', [App\Http\Controllers\CargaMasivaHorarioController::class, 'descargarPlantilla'])->name('carga-masiva.horarios.plantilla');
     });
 
     // CU04 y CU05: Gestión de Docentes (solo Administrador y Coordinador)
@@ -137,6 +147,7 @@ Route::middleware('auth')->group(function () {
     // CU17: Generar y Exportar Reportes (Administrador, Autoridad, Coordinador)
     Route::middleware('role:Administrador,Autoridad,Coordinador')->group(function () {
         Route::get('reportes', [ReporteController::class, 'index'])->name('reportes.index');
+        Route::post('reportes/personalizado', [ReporteController::class, 'personalizado'])->name('reportes.personalizado');
         Route::post('reportes/horarios-semanal', [ReporteController::class, 'horariosSemanal'])->name('reportes.horarios-semanal');
         Route::post('reportes/carga-horaria', [ReporteController::class, 'cargaHoraria'])->name('reportes.carga-horaria');
         Route::post('reportes/asistencia', [ReporteController::class, 'asistencia'])->name('reportes.asistencia');

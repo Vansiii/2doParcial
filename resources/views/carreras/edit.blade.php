@@ -81,11 +81,9 @@
                                                                {{ in_array($materia->sigla, old('materias', $carrera->materias->pluck('sigla')->toArray())) ? 'checked' : '' }}>
                                                         <label class="form-check-label" for="materia_{{ $materia->sigla }}">
                                                             <strong>{{ $materia->sigla }}</strong> - {{ $materia->nombre }}
-                                                            @if($materia->semestre)
-                                                                <span class="badge bg-info ms-1">
-                                                                    Sem {{ $materia->semestre->periodo }}
-                                                                </span>
-                                                            @endif
+                                                            <span class="badge bg-secondary ms-1">
+                                                                Nivel {{ $materia->nivel }}
+                                                            </span>
                                                         </label>
                                                     </div>
                                                 </div>

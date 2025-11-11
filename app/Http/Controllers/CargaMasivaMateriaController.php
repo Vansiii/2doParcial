@@ -27,10 +27,11 @@ class CargaMasivaMateriaController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'archivo' => 'required|file|mimes:xlsx,xls,csv|max:10240',
+            'archivo' => 'required|file|mimes:xlsx,xls,csv,txt|mimetypes:text/csv,text/plain,application/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet|max:10240',
         ], [
             'archivo.required' => 'Debe seleccionar un archivo',
             'archivo.mimes' => 'El archivo debe ser Excel (.xlsx, .xls) o CSV (.csv)',
+            'archivo.mimetypes' => 'El archivo debe ser Excel (.xlsx, .xls) o CSV (.csv)',
             'archivo.max' => 'El archivo no debe superar 10MB',
         ]);
 
@@ -216,7 +217,7 @@ class CargaMasivaMateriaController extends Controller
 
         return [
             'sigla' => strtoupper(trim($fila['sigla'])),
-            'nombre' => ucwords(strtolower($nombre)),
+            'nombre' => strtoupper($nombre), // Todo en MAYÚSCULAS
             'nivel' => (int) $fila['nivel'],
         ];
     }
@@ -293,13 +294,13 @@ class CargaMasivaMateriaController extends Controller
         
         // Crear datos de ejemplo
         $datos = [
-            $this->crearFilaEjemplo('INF220', 'Base de Datos I', 2, 'X', $carreras, ['187-3', '187-4', '187-5', '320-0']),
-            $this->crearFilaEjemplo('INF320', 'Base de Datos II', 3, 'X', $carreras, ['187-3', '187-4', '187-5', '320-0']),
-            $this->crearFilaEjemplo('MAT101', 'Cálculo I', 1, 'X', $carreras, ['187-3', '187-5', '320-0']),
-            $this->crearFilaEjemplo('MAT102', 'Cálculo II', 2, 'X', $carreras, ['187-3', '187-4', '187-5', '320-0']),
-            $this->crearFilaEjemplo('FIS110', 'Física General', 1, '', $carreras, ['187-3', '187-4', '187-5']),
-            $this->crearFilaEjemplo('PRG110', 'Programación I', 1, 'X', $carreras, ['187-3', '187-4', '187-5', '320-0']),
-            $this->crearFilaEjemplo('PRG210', 'Programación II', 2, 'X', $carreras, ['187-3', '187-5', '320-0']),
+            $this->crearFilaEjemplo('INF220', 'BASE DE DATOS I', 2, 'X', $carreras, ['187-3', '187-4', '187-5', '323-0']),
+            $this->crearFilaEjemplo('INF320', 'BASE DE DATOS II', 3, 'X', $carreras, ['187-3', '187-4', '187-5', '323-0']),
+            $this->crearFilaEjemplo('MAT101', 'CÁLCULO I', 1, 'X', $carreras, ['187-3', '187-5', '323-0']),
+            $this->crearFilaEjemplo('MAT102', 'CÁLCULO II', 2, 'X', $carreras, ['187-3', '187-4', '187-5', '323-0']),
+            $this->crearFilaEjemplo('FIS110', 'FÍSICA GENERAL', 1, '', $carreras, ['187-3', '187-4', '187-5']),
+            $this->crearFilaEjemplo('PRG110', 'PROGRAMACIÓN I', 1, 'X', $carreras, ['187-3', '187-4', '187-5', '323-0']),
+            $this->crearFilaEjemplo('PRG210', 'PROGRAMACIÓN II', 2, 'X', $carreras, ['187-3', '187-5', '323-0']),
         ];
 
         Bitacora::registrar(

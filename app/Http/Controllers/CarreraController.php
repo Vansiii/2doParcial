@@ -110,7 +110,7 @@ class CarreraController extends Controller
      */
     public function show($cod)
     {
-        $carrera = Carrera::with(['materias.semestre'])
+        $carrera = Carrera::with(['materias'])
             ->where('cod', $cod)
             ->firstOrFail();
 

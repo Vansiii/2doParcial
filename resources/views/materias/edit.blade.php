@@ -60,16 +60,17 @@
                                 Nombre de la Materia <span class="text-danger">*</span>
                             </label>
                             <input type="text" 
-                                   class="form-control @error('nombre') is-invalid @enderror" 
+                                   class="form-control text-uppercase @error('nombre') is-invalid @enderror" 
                                    id="nombre" 
                                    name="nombre" 
                                    value="{{ old('nombre', $materia->nombre) }}"
-                                   maxlength="30"
+                                   maxlength="100"
+                                   style="text-transform: uppercase;"
                                    required>
                             @error('nombre')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
-                            <small class="text-muted">Máximo 30 caracteres</small>
+                            <small class="text-muted">Máximo 100 caracteres (se guardará en MAYÚSCULAS)</small>
                         </div>
 
                         <div class="alert alert-info">
