@@ -64,14 +64,13 @@
                                 <li>Los módulos y aulas deben existir en el sistema</li>
                             </ol>
                         </li>
-                        <li><strong>⭐ Asignación automática:</strong> Si la materia no está asignada al grupo con el docente, el sistema creará automáticamente la relación Grupo-Materia-Docente</li>
-                        <li><strong>🎯 Docente "Por Designar":</strong> Use el código <code class="bg-warning text-dark px-2">0</code> para materias que aún no tienen docente asignado (debe existir un usuario con código 0 llamado "POR DESIGNAR")</li>
+                        <li><strong>Asignación automática:</strong> Si la materia no está asignada al grupo con el docente, el sistema creará automáticamente la relación Grupo-Materia-Docente</li>
                         <li><strong>Formato del archivo:</strong> Excel (.xlsx, .xls) o CSV</li>
                         <li><strong>Estructura de columnas:</strong>
                             <ul>
                                 <li><code>sigla_grupo</code>: Sigla del grupo (ej: Z1, Z2)</li>
                                 <li><code>sigla_materia</code>: Sigla de la materia (ej: INF220)</li>
-                                <li><code>cod_docente</code>: Código del docente (use <strong class="text-warning">0</strong> para "Por Designar")</li>
+                                <li><code>cod_docente</code>: Código del docente</li>
                                 <li><code>dia1, dia2, dia3, dia4</code>: Días de la semana (Lun, Mar, Mie, Jue, Vie, Sab, Dom)</li>
                                 <li><code>horario1, horario2, horario3, horario4</code>: Horarios en formato HH:MM-HH:MM (ej: 7:00-8:30)</li>
                                 <li><code>local1, local2, local3, local4</code>: Formato CódigoMódulo-NroAula (ej: 236-11)</li>
@@ -238,37 +237,19 @@
                                         <td>18:00-19:00</td>
                                         <td>260-11</td>
                                     </tr>
-                                    <tr class="table-warning">
-                                        <td>Z3</td>
-                                        <td>QMC100</td>
-                                        <td><strong>0</strong></td>
-                                        <td>Mar</td>
-                                        <td>14:00-16:00</td>
-                                        <td>236-20</td>
-                                        <td>Jue</td>
-                                        <td>14:00-16:00</td>
-                                        <td>236-20</td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                    </tr>
                                 </tbody>
                             </table>
                         </div>
                         <div class="alert alert-success mt-3 mb-0">
                             <strong><i class="fas fa-magic"></i> Funcionalidad Automática:</strong>
                             <ul class="mb-0">
-                                <li>✅ Cada fila representa una <strong>materia asignada a un grupo con un docente</strong></li>
-                                <li>✅ Si la asignación Grupo-Materia-Docente <strong>no existe</strong>, el sistema la <strong>creará automáticamente</strong></li>
-                                <li>✅ Use código <strong class="text-warning">0</strong> para materias <strong>"Por Designar"</strong> (sin docente asignado aún)</li>
-                                <li>✅ Puede especificar hasta <strong>4 horarios diferentes</strong> (días) para la misma materia</li>
-                                <li>✅ Si una materia se imparte solo 2 días, deje los campos dia3, horario3, local3, dia4, horario4, local4 vacíos</li>
-                                <li>✅ El formato de <strong>horario</strong> debe ser: <code>HH:MM-HH:MM</code></li>
-                                <li>✅ El formato de <strong>local</strong> debe ser: <code>CódigoMódulo-NroAula</code> (ejemplo: 236-11)</li>
-                                <li>✅ El sistema calcula automáticamente la duración de cada clase en minutos</li>
+                                <li>Cada fila representa una <strong>materia asignada a un grupo con un docente</strong></li>
+                                <li>Si la asignación Grupo-Materia-Docente <strong>no existe</strong>, el sistema la <strong>creará automáticamente</strong></li>
+                                <li>Puede especificar hasta <strong>4 horarios diferentes</strong> (días) para la misma materia</li>
+                                <li>Si una materia se imparte solo 2 días, deje los campos dia3, horario3, local3, dia4, horario4, local4 vacíos</li>
+                                <li>El formato de <strong>horario</strong> debe ser: <code>HH:MM-HH:MM</code></li>
+                                <li>El formato de <strong>local</strong> debe ser: <code>CódigoMódulo-NroAula</code> (ejemplo: 236-11)</li>
+                                <li>El sistema calcula automáticamente la duración de cada clase en minutos</li>
                             </ul>
                         </div>
                     </div>
